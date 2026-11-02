@@ -1,0 +1,2255 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ESP32 IoT Cloud Monitoring (MQTT + GitHub Pages)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- MQTT.js over WebSocket (WSS) untuk GitHub Pages, HP & Laptop -->
+  <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+  <style>
+    :root {
+      --bg-deep: #060913;
+      --bg-card: rgba(19, 28, 50, 0.72);
+      --border-glass: rgba(148, 163, 184, 0.15);
+      --border-bright: rgba(56, 189, 248, 0.38);
+
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --text-dim: #64748b;
+
+      --neon-orange: #ff6b2b;
+      --neon-amber: #f59e0b;
+      --neon-cyan: #00e5ff;
+      --neon-blue: #38bdf8;
+      --neon-emerald: #10b981;
+      --neon-rose: #f43f5e;
+
+      --radius-xl: 22px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-deep);
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(255, 107, 43, 0.14) 0%, transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(0, 229, 255, 0.13) 0%, transparent 42%),
+        radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+        linear-gradient(180deg, #060913 0%, #0b1224 100%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      min-height: 100vh;
+      padding-bottom: 48px;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Navbar */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 14px 26px;
+      background: rgba(8, 13, 26, 0.84);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-glass);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255, 107, 43, 0.25), rgba(0, 229, 255, 0.25));
+      border: 1px solid rgba(255, 107, 43, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(255, 107, 43, 0.25);
+    }
+
+    .brand-logo svg {
+      color: #ff8c5a;
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      background: linear-gradient(90deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 0.76rem;
+      color: var(--text-sub);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 0.73rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .status-badge.online {
+      background: rgba(16, 185, 129, 0.16);
+      color: var(--neon-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      box-shadow: 0 0 18px rgba(16, 185, 129, 0.2);
+    }
+
+    .status-badge.sim {
+      background: rgba(0, 229, 255, 0.12);
+      color: var(--neon-cyan);
+      border: 1px solid rgba(0, 229, 255, 0.4);
+    }
+
+    .status-badge.offline {
+      background: rgba(244, 63, 94, 0.16);
+      color: var(--neon-rose);
+      border: 1px solid rgba(244, 63, 94, 0.45);
+    }
+
+    .dot-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 10px currentColor;
+      animation: pulseGlow 1.6s infinite ease-in-out;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.75); opacity: 0.45; }
+    }
+
+    .chip-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 11px;
+      background: rgba(15, 23, 42, 0.78);
+      border: 1px solid var(--border-glass);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.74rem;
+      color: var(--text-sub);
+    }
+
+    .btn-glass {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 14px;
+      border-radius: 11px;
+      font-family: inherit;
+      font-size: 0.79rem;
+      font-weight: 700;
+      color: var(--text-main);
+      background: rgba(30, 41, 59, 0.78);
+      border: 1px solid var(--border-glass);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-glass:hover {
+      border-color: var(--neon-blue);
+      transform: translateY(-1px);
+    }
+
+    .btn-glass.primary {
+      background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+      border-color: rgba(56, 189, 248, 0.5);
+      box-shadow: 0 4px 16px rgba(14, 165, 233, 0.28);
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1420px;
+      margin: 20px auto 0;
+      padding: 0 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* MQTT Cloud Bar */
+    .mqtt-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 14px 20px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(90deg, rgba(14, 23, 45, 0.92) 0%, rgba(19, 36, 66, 0.88) 100%);
+      border: 1px solid rgba(0, 229, 255, 0.24);
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .seg-tabs {
+      display: inline-flex;
+      background: rgba(6, 9, 19, 0.85);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border-glass);
+    }
+
+    .seg-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-sub);
+      padding: 7px 13px;
+      font-family: inherit;
+      font-size: 0.76rem;
+      font-weight: 700;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .seg-btn.active {
+      background: linear-gradient(135deg, #1e293b, #334155);
+      color: var(--neon-cyan);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .mqtt-input, .mqtt-select {
+      background: rgba(6, 9, 19, 0.85);
+      border: 1px solid var(--border-glass);
+      color: var(--text-main);
+      padding: 7px 11px;
+      border-radius: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      outline: none;
+    }
+
+    .mqtt-input:focus, .mqtt-select:focus {
+      border-color: var(--neon-cyan);
+    }
+
+    .mqtt-pill-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 5px 11px;
+      border-radius: 8px;
+      background: rgba(16, 185, 129, 0.14);
+      color: var(--neon-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .mqtt-pill-indicator.connecting {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--neon-amber);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .sim-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(6, 9, 19, 0.65);
+      border: 1px solid var(--border-glass);
+      padding: 5px 12px;
+      border-radius: 10px;
+      font-size: 0.76rem;
+    }
+
+    .sim-pill strong {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--neon-orange);
+    }
+
+    .sim-pill.hum strong {
+      color: var(--neon-cyan);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 95px;
+      height: 6px;
+      border-radius: 99px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--neon-cyan);
+      box-shadow: 0 0 10px var(--neon-cyan);
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* HERO GRID */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.35fr;
+      gap: 20px;
+    }
+
+    .gauge-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .gauge-card::after {
+      content: "";
+      position: absolute;
+      top: -40%;
+      right: -30%;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      filter: blur(55px);
+      pointer-events: none;
+      opacity: 0.32;
+    }
+
+    .gauge-card.temp-theme::after { background: var(--neon-orange); }
+    .gauge-card.hum-theme::after { background: var(--neon-cyan); }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .card-tag {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-sub);
+    }
+
+    .pill-status {
+      font-size: 0.71rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 99px;
+      background: rgba(148, 163, 184, 0.14);
+      color: var(--text-sub);
+    }
+
+    .pill-status.ok {
+      background: rgba(16, 185, 129, 0.16);
+      color: var(--neon-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .pill-status.hot {
+      background: rgba(255, 107, 43, 0.18);
+      color: #ff8c5a;
+      border: 1px solid rgba(255, 107, 43, 0.4);
+    }
+
+    .pill-status.alert {
+      background: rgba(244, 63, 94, 0.2);
+      color: var(--neon-rose);
+      border: 1px solid rgba(244, 63, 94, 0.45);
+    }
+
+    .radial-wrap {
+      position: relative;
+      width: 190px;
+      height: 155px;
+      margin: 4px auto 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .radial-svg {
+      width: 190px;
+      height: 155px;
+      overflow: visible;
+    }
+
+    .radial-bg {
+      fill: none;
+      stroke: rgba(148, 163, 184, 0.14);
+      stroke-width: 13;
+      stroke-linecap: round;
+    }
+
+    .radial-bar {
+      fill: none;
+      stroke-width: 13;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .radial-center {
+      position: absolute;
+      top: 54%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .big-metric {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    .metric-unit {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      margin-top: 3px;
+    }
+
+    .gauge-footer {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-glass);
+      text-align: center;
+    }
+
+    .mini-stat span {
+      display: block;
+      font-size: 0.67rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .mini-stat strong {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.83rem;
+      color: var(--text-main);
+    }
+
+    /* Chamber Visualizer */
+    .chamber-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(160deg, rgba(17, 24, 39, 0.86), rgba(10, 15, 29, 0.94));
+    }
+
+    .chamber-stage {
+      position: relative;
+      height: 168px;
+      margin: 6px 0 10px;
+      border-radius: var(--radius-lg);
+      background: radial-gradient(circle at 50% 85%, rgba(255, 107, 43, 0.17), rgba(6, 9, 19, 0.92) 75%);
+      border: 1px solid rgba(255, 107, 43, 0.3);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 12px 16px;
+      transition: all 0.5s ease;
+    }
+
+    .chamber-stage.cooling {
+      background: radial-gradient(circle at 50% 30%, rgba(0, 229, 255, 0.14), rgba(6, 9, 19, 0.92) 75%);
+      border-color: rgba(0, 229, 255, 0.28);
+    }
+
+    .chamber-fan-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .fan-wheel {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.9);
+      border: 2px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      transition: all 0.3s ease;
+    }
+
+    .fan-wheel.spinning {
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+      box-shadow: 0 0 18px rgba(0, 229, 255, 0.4);
+    }
+
+    .fan-wheel.spinning svg {
+      animation: rotateFan 1.1s linear infinite;
+    }
+
+    @keyframes rotateFan {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .chamber-temp-badge {
+      display: inline-block;
+      padding: 4px 13px;
+      border-radius: 99px;
+      background: rgba(6, 9, 19, 0.8);
+      border: 1px solid var(--border-glass);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .chamber-heaters-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .heater-coil-unit {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+    }
+
+    .heater-coil-unit.glowing {
+      background: linear-gradient(90deg, rgba(255, 107, 43, 0.25), rgba(244, 63, 94, 0.2));
+      border-color: var(--neon-orange);
+      box-shadow: 0 0 20px rgba(255, 107, 43, 0.35);
+    }
+
+    .coil-bars { display: flex; gap: 4px; }
+    .coil-bar {
+      width: 5px;
+      height: 18px;
+      border-radius: 4px;
+      background: #334155;
+    }
+
+    .heater-coil-unit.glowing .coil-bar {
+      background: #ff6b2b;
+      box-shadow: 0 0 8px #ff6b2b;
+      animation: coilPulse 1.2s infinite alternate;
+    }
+
+    @keyframes coilPulse {
+      from { opacity: 0.7; transform: scaleY(0.92); }
+      to { opacity: 1; transform: scaleY(1.08); }
+    }
+
+    .coil-label { font-size: 0.74rem; font-weight: 800; }
+    .coil-state {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-sub);
+    }
+    .heater-coil-unit.glowing .coil-state { color: #ff9e6d; }
+
+    /* MAIN GRID */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.38fr 1fr;
+      gap: 20px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .section-head h2 { font-size: 1.06rem; font-weight: 800; }
+    .section-head p { font-size: 0.77rem; color: var(--text-sub); }
+
+    .chart-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .chart-legend-row {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      font-size: 0.77rem;
+      color: var(--text-sub);
+      margin-bottom: 12px;
+    }
+
+    .legend-chip { display: inline-flex; align-items: center; gap: 7px; }
+    .dot-indicator { width: 10px; height: 10px; border-radius: 50%; }
+
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      height: 340px;
+      background: rgba(6, 9, 19, 0.65);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 10px;
+    }
+
+    #telemetryChart { width: 100%; height: 100%; display: block; }
+
+    .chart-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(11, 18, 36, 0.95);
+      border: 1px solid var(--border-bright);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 0.75rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+      z-index: 20;
+    }
+
+    /* Actuator Control Center */
+    .mode-switcher-pill {
+      display: inline-flex;
+      background: rgba(6, 9, 19, 0.88);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border-glass);
+    }
+
+    .mode-pill-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-sub);
+      padding: 6px 15px;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 800;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mode-pill-btn.active {
+      background: linear-gradient(135deg, #00e5ff, #0284c7);
+      color: #060913;
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
+    }
+
+    .mode-info-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.77rem;
+      margin-bottom: 14px;
+      background: rgba(0, 229, 255, 0.08);
+      border: 1px solid rgba(0, 229, 255, 0.28);
+      color: #bae6fd;
+    }
+
+    .mode-info-strip.manual-mode {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #fde68a;
+    }
+
+    .actuator-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .actuator-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 16px;
+      border-radius: var(--radius-lg);
+      background: rgba(10, 16, 31, 0.85);
+      border: 1px solid var(--border-glass);
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .actuator-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(148, 163, 184, 0.35);
+    }
+
+    .actuator-card.is-on.heater-type {
+      background: linear-gradient(135deg, rgba(255, 107, 43, 0.17) 0%, rgba(15, 23, 42, 0.9) 100%);
+      border-color: rgba(255, 107, 43, 0.6);
+      box-shadow: 0 8px 25px -6px rgba(255, 107, 43, 0.3);
+    }
+
+    .actuator-card.is-on.fan-type {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%);
+      border-color: rgba(0, 229, 255, 0.6);
+      box-shadow: 0 8px 25px -6px rgba(0, 229, 255, 0.28);
+    }
+
+    .act-left { display: flex; align-items: center; gap: 13px; }
+    .act-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 13px;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-sub);
+    }
+
+    .actuator-card.is-on.heater-type .act-icon {
+      background: rgba(255, 107, 43, 0.22);
+      border-color: var(--neon-orange);
+      color: var(--neon-orange);
+    }
+
+    .actuator-card.is-on.fan-type .act-icon {
+      background: rgba(0, 229, 255, 0.2);
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+    }
+
+    .act-title { font-size: 0.92rem; font-weight: 800; }
+    .act-sub { font-size: 0.73rem; color: var(--text-sub); }
+    .act-sub code {
+      font-family: 'JetBrains Mono', monospace;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .act-right { display: flex; align-items: center; gap: 12px; }
+    .power-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.73rem;
+      font-weight: 800;
+      padding: 4px 9px;
+      border-radius: 7px;
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text-dim);
+    }
+
+    .actuator-card.is-on.heater-type .power-pill { background: rgba(255, 107, 43, 0.22); color: #ff9e6d; }
+    .actuator-card.is-on.fan-type .power-pill { background: rgba(0, 229, 255, 0.2); color: var(--neon-cyan); }
+
+    .neo-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+    .neo-switch input { opacity: 0; width: 0; height: 0; }
+    .neo-slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: #1e293b; border: 1px solid var(--border-glass);
+      border-radius: 99px; transition: 0.25s;
+    }
+    .neo-slider::before {
+      position: absolute; content: ""; height: 18px; width: 18px;
+      left: 3px; bottom: 3px; background: #94a3b8; border-radius: 50%;
+      transition: 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    input:checked + .neo-slider {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: var(--neon-emerald);
+    }
+    input:checked + .neo-slider::before {
+      transform: translateX(22px);
+      background: var(--neon-emerald);
+      box-shadow: 0 0 8px var(--neon-emerald);
+    }
+
+    /* Thermostat Settings */
+    .thermostat-panel {
+      background: rgba(6, 9, 19, 0.65);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+    }
+
+    .thermostat-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .thermostat-head h4 {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--text-sub);
+      text-transform: uppercase;
+    }
+
+    .thermostat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field-box label { display: block; font-size: 0.71rem; color: var(--text-sub); margin-bottom: 4px; font-weight: 600; }
+    .field-input {
+      display: flex; align-items: center;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border-glass);
+      border-radius: 9px; padding: 6px 10px;
+    }
+    .field-input input, .field-input select {
+      width: 100%; background: transparent; border: none;
+      color: var(--text-main); font-family: 'JetBrains Mono', monospace;
+      font-size: 0.83rem; font-weight: 700; outline: none;
+    }
+    .field-input select { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.77rem; }
+    .field-input select option { background: #0f172a; color: #f8fafc; }
+
+    /* Bottom Row */
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1.38fr; gap: 20px; }
+    .log-feed { max-height: 245px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    .log-entry {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 9px 12px; border-radius: 10px;
+      background: rgba(6, 9, 19, 0.65);
+      border-left: 3px solid var(--neon-blue);
+      font-size: 0.78rem;
+    }
+    .log-entry.control { border-left-color: var(--neon-orange); }
+    .log-entry.mqtt { border-left-color: var(--neon-emerald); }
+    .log-time { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-dim); white-space: nowrap; }
+
+    .table-wrap { overflow-x: auto; }
+    .modern-table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
+    .modern-table th, .modern-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-glass); }
+    .modern-table th { font-size: 0.7rem; text-transform: uppercase; color: var(--text-sub); background: rgba(6, 9, 19, 0.55); }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(3, 6, 14, 0.8);
+      backdrop-filter: blur(8px); display: flex; align-items: center;
+      justify-content: center; padding: 20px; z-index: 100;
+    }
+    .modal-box { max-width: 860px; width: 100%; max-height: 90vh; overflow-y: auto; }
+
+    @media (max-width: 1180px) {
+      .hero-grid { grid-template-columns: 1fr 1fr; }
+      .chamber-card { grid-column: span 2; }
+      .main-grid, .bottom-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 680px) {
+      .navbar { padding: 12px 15px; }
+      .wrapper { padding: 0 14px; }
+      .hero-grid { grid-template-columns: 1fr; }
+      .chamber-card { grid-column: span 1; }
+      .thermostat-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- TOP GLASS NAVBAR -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+          <circle cx="12" cy="12" r="4" />
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>ESP32 Cloud IoT Command Center</h1>
+        <p>GitHub Pages + MQTT Real-Time (2 Heater &amp; 1 Kipas)</p>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div id="connectionBadge" class="status-badge online">
+        <span class="dot-pulse"></span>
+        <span id="connectionText">MQTT CLOUD AKTIF</span>
+      </div>
+
+      <div class="chip-meta">
+        <span id="brokerShortLabel">EMQX WSS</span>
+        <span>•</span>
+        <span id="topicShortLabel">esp32-dryer-panel-01</span>
+      </div>
+
+      <button id="btnOpenGuide" class="btn-glass primary">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+          <rect x="9" y="9" width="6" height="6" />
+        </svg>
+        <span>Pinout &amp; Panduan GitHub</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="wrapper">
+    <!-- MQTT CLOUD & MODE TOOLBAR -->
+    <section class="glass-card mqtt-bar">
+      <div class="toolbar-group">
+        <div class="seg-tabs">
+          <button id="modeBtnMqtt" class="seg-btn active" title="Terhubung jarak jauh via Internet menggunakan Broker MQTT Gratis">MQTT Cloud (Internet)</button>
+          <button id="modeBtnSim" class="seg-btn" title="Uji coba simulasi sensor & fisika pemanas">Simulator + Sync MQTT</button>
+          <button id="modeBtnDirect" class="seg-btn" title="Koneksi WiFi lokal langsung ke IP ESP32">WiFi IP Lokal</button>
+        </div>
+
+        <span id="mqttStatusPill" class="mqtt-pill-indicator connecting">Menghubungkan Broker...</span>
+      </div>
+
+      <!-- Konfigurasi Broker & Topic Unik MQTT -->
+      <div id="mqttConfigGroup" class="toolbar-group">
+        <select id="selectBroker" class="mqtt-select" title="Pilih Server Broker MQTT Gratis">
+          <option value="wss://broker.emqx.io:8084/mqtt" selected>Broker: EMQX Cloud (Gratis)</option>
+          <option value="wss://broker.hivemq.com:8884/mqtt">Broker: HiveMQ Cloud (Gratis)</option>
+        </select>
+        <input type="text" id="inputTopicId" class="mqtt-input" style="width:185px;" value="esp32-dryer-panel-01" title="Samakan ID Topik ini dengan kode di Arduino ESP32 dan di HP Anda" placeholder="ID Topik Unik Alat" />
+        <button id="btnApplyMqtt" class="btn-glass primary">Sambungkan</button>
+      </div>
+
+      <!-- Slider Uji Cepat saat mode Simulator dipilih -->
+      <div id="simQuickGroup" class="toolbar-group hidden">
+        <div class="sim-pill">
+          <span>Suhu: <strong id="simTempLabel">29.4°C</strong></span>
+          <input type="range" id="simTempSlider" min="20" max="58" step="0.2" value="29.4" />
+        </div>
+        <div class="sim-pill hum">
+          <span>Lembab: <strong id="simHumLabel">64.2%</strong></span>
+          <input type="range" id="simHumSlider" min="20" max="95" step="0.5" value="64.2" />
+        </div>
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--text-sub);cursor:pointer;">
+          <input type="checkbox" id="chkAutoWave" checked style="accent-color:var(--neon-cyan)" />
+          <span>Fisika Otomatis</span>
+        </label>
+      </div>
+
+      <!-- Input IP Lokal -->
+      <div id="directIpGroup" class="toolbar-group hidden">
+        <input type="text" id="inputEspIp" class="mqtt-input" placeholder="IP ESP32 (192.168.1.105)" value="192.168.1.105" />
+        <button id="btnConnectEsp" class="btn-glass primary">Hubungkan IP</button>
+      </div>
+    </section>
+
+    <!-- ROW 1: RADIAL GAUGES + INTERACTIVE HEATING CHAMBER -->
+    <section class="hero-grid">
+      <!-- Gauge 1: Suhu -->
+      <article class="glass-card gauge-card temp-theme">
+        <div class="card-top">
+          <span class="card-tag">Suhu Ruang Pemanas</span>
+          <span id="tempStatusBadge" class="pill-status hot">Memanaskan</span>
+        </div>
+
+        <div class="radial-wrap">
+          <svg class="radial-svg" viewBox="0 0 200 160">
+            <defs>
+              <linearGradient id="tempGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#38bdf8" />
+                <stop offset="50%" stop-color="#fb923c" />
+                <stop offset="100%" stop-color="#f43f5e" />
+              </linearGradient>
+            </defs>
+            <path class="radial-bg" d="M 30 135 A 78 78 0 1 1 170 135" />
+            <path id="arcTemp" class="radial-bar" stroke="url(#tempGrad)" d="M 30 135 A 78 78 0 1 1 170 135" stroke-dasharray="330" stroke-dashoffset="165" />
+          </svg>
+          <div class="radial-center">
+            <div id="valTemp" class="big-metric" style="color:#ff8c5a">29.4</div>
+            <div class="metric-unit">DERAJAT °C</div>
+          </div>
+        </div>
+
+        <div class="gauge-footer">
+          <div class="mini-stat">
+            <span>Minimum</span>
+            <strong id="valMinTemp">28.5°C</strong>
+          </div>
+          <div class="mini-stat">
+            <span>Target Auto</span>
+            <strong id="lblThresholdTemp" style="color:#fb923c">30° - 38°C</strong>
+          </div>
+          <div class="mini-stat">
+            <span>Maksimum</span>
+            <strong id="valMaxTemp">31.0°C</strong>
+          </div>
+        </div>
+      </article>
+
+      <!-- Gauge 2: Kelembaban -->
+      <article class="glass-card gauge-card hum-theme">
+        <div class="card-top">
+          <span class="card-tag">Kelembaban Udara (RH)</span>
+          <span id="humStatusBadge" class="pill-status ok">Optimal</span>
+        </div>
+
+        <div class="radial-wrap">
+          <svg class="radial-svg" viewBox="0 0 200 160">
+            <defs>
+              <linearGradient id="humGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#10b981" />
+                <stop offset="100%" stop-color="#00e5ff" />
+              </linearGradient>
+            </defs>
+            <path class="radial-bg" d="M 30 135 A 78 78 0 1 1 170 135" />
+            <path id="arcHum" class="radial-bar" stroke="url(#humGrad)" d="M 30 135 A 78 78 0 1 1 170 135" stroke-dasharray="330" stroke-dashoffset="118" />
+          </svg>
+          <div class="radial-center">
+            <div id="valHum" class="big-metric" style="color:#00e5ff">64.2</div>
+            <div class="metric-unit">PERSEN %RH</div>
+          </div>
+        </div>
+
+        <div class="gauge-footer">
+          <div class="mini-stat">
+            <span>Minimum</span>
+            <strong id="valMinHum">58.0%</strong>
+          </div>
+          <div class="mini-stat">
+            <span>Heat Index</span>
+            <strong id="valHeatIndex" style="color:#38bdf8">31.8°C</strong>
+          </div>
+          <div class="mini-stat">
+            <span>Maksimum</span>
+            <strong id="valMaxHum">68.5%</strong>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 3: Chamber Visualizer -->
+      <article class="glass-card chamber-card">
+        <div class="card-top">
+          <div>
+            <span class="card-tag">Visualisasi Ruang Pemanas Real-Time</span>
+            <h3 style="font-size:0.94rem;font-weight:800;margin-top:2px;">Status Fisik 2 Heater &amp; 1 Kipas</h3>
+          </div>
+          <span id="valActiveRelays" class="pill-status ok">3 / 3 Aktif</span>
+        </div>
+
+        <div id="chamberStage" class="chamber-stage">
+          <div class="chamber-fan-box">
+            <div id="visualFanWheel" class="fan-wheel spinning">
+              <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M12 12c0-3 2.5-5.5 5.5-5.5S23 9 23 12H12z" />
+                <path d="M12 12c3 0 5.5 2.5 5.5 5.5S15 23 12 23V12z" />
+                <path d="M12 12c0 3-2.5 5.5-5.5 5.5S1 15 1 12h11z" />
+                <path d="M12 12c-3 0-5.5-2.5-5.5-2.5S9 1 12 1v11z" />
+              </svg>
+            </div>
+            <div>
+              <div style="font-size:0.77rem;font-weight:800;">Kipas Blower Sirkulasi</div>
+              <div id="visualFanText" style="font-size:0.71rem;color:var(--neon-cyan);font-weight:700;">MENYALA (Sirkulasi Aktif)</div>
+            </div>
+          </div>
+
+          <div style="text-align:center;">
+            <span id="chamberStatusBanner" class="chamber-temp-badge">
+              🔥 Ruang Sedang Dipanaskan menuju 38.0°C
+            </span>
+          </div>
+
+          <div class="chamber-heaters-row">
+            <div id="visualHeater1" class="heater-coil-unit glowing">
+              <div>
+                <div class="coil-label">HEATER 1</div>
+                <div id="visualH1Text" class="coil-state">ON • GPIO 26</div>
+              </div>
+              <div class="coil-bars">
+                <span class="coil-bar"></span><span class="coil-bar"></span><span class="coil-bar"></span>
+              </div>
+            </div>
+
+            <div id="visualHeater2" class="heater-coil-unit glowing">
+              <div>
+                <div class="coil-label">HEATER 2</div>
+                <div id="visualH2Text" class="coil-state">ON • GPIO 27</div>
+              </div>
+              <div class="coil-bars">
+                <span class="coil-bar"></span><span class="coil-bar"></span><span class="coil-bar"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gauge-footer">
+          <div class="mini-stat">
+            <span>Mode Sistem</span>
+            <strong id="valModeSummary" style="color:var(--neon-cyan)">AUTO</strong>
+          </div>
+          <div class="mini-stat">
+            <span>Sumber Data</span>
+            <strong id="valDataSource">SIM + MQTT</strong>
+          </div>
+          <div class="mini-stat">
+            <span>Update</span>
+            <strong id="valLastUpdate">Baru saja</strong>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ROW 2: REAL-TIME CHART + RELAY CONTROL CENTER -->
+    <section class="main-grid">
+      <div class="glass-card">
+        <div class="section-head">
+          <div>
+            <h2>Grafik Real-Time Suhu &amp; Kelembaban</h2>
+            <p>Kurva telemetri langsung dengan garis batas Cut-Off Heater otomatis</p>
+          </div>
+          <div class="chart-toolbar">
+            <div class="seg-tabs">
+              <button class="seg-btn active" data-series="both">Semua</button>
+              <button class="seg-btn" data-series="temp">Suhu</button>
+              <button class="seg-btn" data-series="hum">Lembab</button>
+            </div>
+            <button id="btnPauseChart" class="btn-glass">Jeda</button>
+            <button id="btnResetChart" class="btn-glass">Reset</button>
+            <button id="btnExportCsv" class="btn-glass primary">Unduh CSV</button>
+          </div>
+        </div>
+
+        <div class="chart-legend-row">
+          <span class="legend-chip">
+            <span class="dot-indicator" style="background:#ff6b2b;box-shadow:0 0 8px #ff6b2b"></span>
+            Suhu Ruangan (°C)
+          </span>
+          <span class="legend-chip">
+            <span class="dot-indicator" style="background:#00e5ff;box-shadow:0 0 8px #00e5ff"></span>
+            Kelembaban (%RH)
+          </span>
+          <span class="legend-chip">
+            <span style="width:18px;border-top:2px dashed #f43f5e;display:inline-block"></span>
+            Batas Cut-Off Heater (<strong id="legendTempMax">38.0</strong>°C)
+          </span>
+        </div>
+
+        <div class="canvas-container">
+          <canvas id="telemetryChart" width="800" height="330"></canvas>
+          <div id="chartTooltip" class="chart-tooltip hidden"></div>
+        </div>
+      </div>
+
+      <!-- Right: 2 Heater + 1 Kipas Control Panel -->
+      <div class="glass-card">
+        <div class="section-head">
+          <div>
+            <h2>Panel Kontrol 2 Heater &amp; 1 Kipas</h2>
+            <p>Sinkron otomatis antara HP, Laptop, dan ESP32 via MQTT</p>
+          </div>
+          <div class="mode-switcher-pill">
+            <button id="btnModeAuto" class="mode-pill-btn active">AUTO</button>
+            <button id="btnModeManual" class="mode-pill-btn">MANUAL</button>
+          </div>
+        </div>
+
+        <div id="modeBanner" class="mode-info-strip">
+          <span id="modeBannerText">
+            ⚡ <strong>Mode AUTO Aktif:</strong> Heater 1, Heater 2, dan Kipas diatur otomatis oleh sensor.
+          </span>
+          <div style="display:flex;gap:6px;">
+            <button id="btnAllOn" class="btn-glass" style="padding:5px 10px;font-size:0.72rem;">ON Semua</button>
+            <button id="btnAllOff" class="btn-glass" style="padding:5px 10px;font-size:0.72rem;">OFF Semua</button>
+          </div>
+        </div>
+
+        <div class="actuator-list">
+          <!-- Heater 1 -->
+          <div id="cardRelayHeater1" class="actuator-card heater-type is-on">
+            <div class="act-left">
+              <div class="act-icon">
+                <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <div class="act-title">Heater 1 (Pemanas Utama)</div>
+                <div class="act-sub">Pin <code>GPIO 26</code> • Auto ON &le; <span id="metaH1Low">30.0</span>°C | Cut-Off &ge; <span id="metaH1High">38.0</span>°C</div>
+              </div>
+            </div>
+            <div class="act-right">
+              <span id="stateTextHeater1" class="power-pill">ON</span>
+              <label class="neo-switch" onclick="event.stopPropagation()">
+                <input type="checkbox" id="toggleHeater1" data-relay="heater1" checked />
+                <span class="neo-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Heater 2 -->
+          <div id="cardRelayHeater2" class="actuator-card heater-type is-on">
+            <div class="act-left">
+              <div class="act-icon">
+                <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <div class="act-title">Heater 2 (Pemanas Pendamping)</div>
+                <div class="act-sub">Pin <code>GPIO 27</code> • Auto ON &le; <span id="metaH2Low">30.0</span>°C | Cut-Off &ge; <span id="metaH2High">38.0</span>°C</div>
+              </div>
+            </div>
+            <div class="act-right">
+              <span id="stateTextHeater2" class="power-pill">ON</span>
+              <label class="neo-switch" onclick="event.stopPropagation()">
+                <input type="checkbox" id="toggleHeater2" data-relay="heater2" checked />
+                <span class="neo-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Kipas -->
+          <div id="cardRelayFan" class="actuator-card fan-type is-on">
+            <div class="act-left">
+              <div class="act-icon">
+                <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M12 12c0-3 2.5-5.5 5.5-5.5S23 9 23 12H12z" />
+                  <path d="M12 12c3 0 5.5 2.5 5.5 5.5S15 23 12 23V12z" />
+                  <path d="M12 12c0 3-2.5 5.5-5.5 5.5S1 15 1 12h11z" />
+                  <path d="M12 12c-3 0-5.5-2.5-5.5-2.5S9 1 12 1v11z" />
+                </svg>
+              </div>
+              <div>
+                <div class="act-title">Kipas Sirkulasi / Blower</div>
+                <div class="act-sub">Pin <code>GPIO 14</code> • Auto: Menyala bersama Heater</div>
+              </div>
+            </div>
+            <div class="act-right">
+              <span id="stateTextFan" class="power-pill">ON</span>
+              <label class="neo-switch" onclick="event.stopPropagation()">
+                <input type="checkbox" id="toggleFan" data-relay="fan" checked />
+                <span class="neo-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="thermostat-panel">
+          <div class="thermostat-head">
+            <h4>Konfigurasi Termostat Mode AUTO</h4>
+            <button id="btnSaveThresholds" class="btn-glass primary" style="padding:5px 12px;font-size:0.74rem;">Simpan &amp; Kirim ke MQTT</button>
+          </div>
+          <div class="thermostat-grid">
+            <div class="field-box">
+              <label>Suhu Nyala (Heater 1 &amp; 2 ON &le;)</label>
+              <div class="field-input">
+                <input type="number" id="inputTempLow" step="0.5" value="30.0" />
+                <span style="font-size:0.75rem;color:var(--text-dim)">°C</span>
+              </div>
+            </div>
+            <div class="field-box">
+              <label>Suhu Cut-Off (Heater 1 &amp; 2 OFF &ge;)</label>
+              <div class="field-input">
+                <input type="number" id="inputTempHigh" step="0.5" value="38.0" />
+                <span style="font-size:0.75rem;color:var(--text-dim)">°C</span>
+              </div>
+            </div>
+            <div class="field-box">
+              <label>Mode Kerja Kipas Saat AUTO</label>
+              <div class="field-input">
+                <select id="selectFanRule">
+                  <option value="with_heater" selected>Menyala Bersama Heater (Sirkulasi)</option>
+                  <option value="overheat_hum">ON Saat Cut-Off / Lembab Tinggi</option>
+                  <option value="always_on">Selalu Menyala Saat Auto</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-box">
+              <label>Batas Kelembaban Tinggi (&ge;)</label>
+              <div class="field-input">
+                <input type="number" id="inputHumHigh" step="1" value="70.0" />
+                <span style="font-size:0.75rem;color:var(--text-dim)">%RH</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROW 3: LOG FEED & TELEMETRY TABLE -->
+    <section class="bottom-grid">
+      <div class="glass-card">
+        <div class="section-head">
+          <div>
+            <h2>Log Komunikasi MQTT &amp; Aktuator</h2>
+            <p>Catatan perintah jarak jauh antara HP, Laptop, dan ESP32</p>
+          </div>
+          <button id="btnClearLogs" class="btn-glass" style="padding:5px 11px;font-size:0.74rem;">Bersihkan</button>
+        </div>
+        <div id="logList" class="log-feed"></div>
+      </div>
+
+      <div class="glass-card">
+        <div class="section-head">
+          <div>
+            <h2>Tabel Riwayat Telemetri Sensor</h2>
+            <p>10 data pembacaan terakhir yang diterima</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Suhu</th>
+                <th>Kelembaban</th>
+                <th>Heater 1</th>
+                <th>Heater 2</th>
+                <th>Kipas</th>
+                <th>Sumber</th>
+              </tr>
+            </thead>
+            <tbody id="telemetryTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL PANDUAN GITHUB PAGES + PINOUT ESP32 -->
+  <div id="guideModal" class="modal-overlay hidden">
+    <div class="glass-card modal-box">
+      <div class="section-head" style="border-bottom:1px solid var(--border-glass);padding-bottom:12px;">
+        <div>
+          <h2>Panduan GitHub Pages + MQTT Cloud + Pinout ESP32</h2>
+          <p>Cara meng-online-kan ke GitHub Pages secara gratis &amp; menghubungkan ESP32</p>
+        </div>
+        <button id="btnCloseGuide" class="btn-glass">&times; Tutup</button>
+      </div>
+
+      <div class="table-wrap" style="margin-bottom:18px;">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Perangkat / Komponen</th>
+              <th>Pin Modul</th>
+              <th>Pin GPIO ESP32</th>
+              <th>Fungsi Utama</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Sensor DHT22 / DHT11</strong></td>
+              <td>VCC / DATA / GND</td>
+              <td><code>3V3</code> / <code>GPIO 4</code> / <code>GND</code></td>
+              <td>Membaca Suhu (°C) &amp; Kelembaban (%RH)</td>
+            </tr>
+            <tr>
+              <td><strong>Relay 1 — Heater 1</strong></td>
+              <td>IN1</td>
+              <td><code>GPIO 26</code></td>
+              <td>Elemen Pemanas 1 (Utama)</td>
+            </tr>
+            <tr>
+              <td><strong>Relay 2 — Heater 2</strong></td>
+              <td>IN2</td>
+              <td><code>GPIO 27</code></td>
+              <td>Elemen Pemanas 2 (Pendamping)</td>
+            </tr>
+            <tr>
+              <td><strong>Relay 3 — Kipas</strong></td>
+              <td>IN3</td>
+              <td><code>GPIO 14</code></td>
+              <td>Kipas Sirkulasi / Blower</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="font-size:0.82rem;color:var(--text-sub);line-height:1.65;">
+        <h4 style="color:#fff;margin-bottom:6px;">Cara Upload Gratis ke GitHub Pages (Dapat Link https://username.github.io/...):</h4>
+        <ol style="padding-left:18px;display:flex;flex-direction:column;gap:6px;">
+          <li>Buka <strong>github.com</strong> (login / daftar gratis), lalu klik tombol <strong>New Repository</strong> (beri nama misal <code>monitoring-esp32</code>, pilih <strong>Public</strong>, klik <em>Create repository</em>).</li>
+          <li>Klik tulisan <strong>"uploading an existing file"</strong>, lalu tarik file <code>index.html</code> ini ke dalamnya dan klik <strong>Commit changes</strong>.</li>
+          <li>Buka menu <strong>Settings</strong> &rarr; <strong>Pages</strong> (di menu kiri) &rarr; pada bagian <em>Branch</em> pilih <strong>main</strong> lalu klik <strong>Save</strong>.</li>
+          <li>Tunggu ~30 detik, link resmi <code>https://username.github.io/monitoring-esp32/</code> siap dibuka di <strong>HP maupun Laptop dari mana saja</strong>!</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENGINE JAVASCRIPT + MQTT OVER WEBSOCKETS -->
+  <script>
+    (function () {
+      const clientId = 'web-esp32-' + Math.random().toString(16).slice(2, 8);
+      let mqttClient = null;
+      let lastHardwareMsgAt = 0;
+
+      const appState = {
+        sourceMode: 'mqtt', // 'mqtt' | 'sim' | 'direct'
+        brokerUrl: localStorage.getItem('esp32_mqtt_broker') || 'wss://broker.emqx.io:8084/mqtt',
+        topicId: localStorage.getItem('esp32_mqtt_topic') || 'esp32-dryer-panel-01',
+        espIp: localStorage.getItem('esp32_ip') || '192.168.1.105',
+        mqttConnected: false,
+        chartSeries: 'both',
+        chartPaused: false,
+        autoWave: true,
+        telemetry: {
+          temperature: 29.4,
+          humidity: 64.2,
+          heatIndex: 31.8,
+          dewPoint: 21.9,
+          minTemp: 28.5,
+          maxTemp: 30.2,
+          minHum: 60.0,
+          maxHum: 68.5,
+          updatedAt: new Date().toISOString(),
+          source: 'SIM + MQTT',
+        },
+        control: {
+          mode: 'auto',
+          relays: {
+            heater1: true,
+            heater2: true,
+            fan: true,
+          },
+          thresholds: {
+            tempLow: 30.0,
+            tempHigh: 38.0,
+            humHigh: 70.0,
+            fanRule: 'with_heater',
+          },
+        },
+        history: [],
+        logs: [],
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const el = {
+        connectionBadge: $('connectionBadge'),
+        connectionText: $('connectionText'),
+        brokerShortLabel: $('brokerShortLabel'),
+        topicShortLabel: $('topicShortLabel'),
+        mqttStatusPill: $('mqttStatusPill'),
+        btnOpenGuide: $('btnOpenGuide'),
+        btnCloseGuide: $('btnCloseGuide'),
+        guideModal: $('guideModal'),
+
+        modeBtnMqtt: $('modeBtnMqtt'),
+        modeBtnSim: $('modeBtnSim'),
+        modeBtnDirect: $('modeBtnDirect'),
+        mqttConfigGroup: $('mqttConfigGroup'),
+        simQuickGroup: $('simQuickGroup'),
+        directIpGroup: $('directIpGroup'),
+
+        selectBroker: $('selectBroker'),
+        inputTopicId: $('inputTopicId'),
+        btnApplyMqtt: $('btnApplyMqtt'),
+
+        simTempSlider: $('simTempSlider'),
+        simHumSlider: $('simHumSlider'),
+        simTempLabel: $('simTempLabel'),
+        simHumLabel: $('simHumLabel'),
+        chkAutoWave: $('chkAutoWave'),
+
+        inputEspIp: $('inputEspIp'),
+        btnConnectEsp: $('btnConnectEsp'),
+
+        valTemp: $('valTemp'),
+        arcTemp: $('arcTemp'),
+        valMinTemp: $('valMinTemp'),
+        valMaxTemp: $('valMaxTemp'),
+        lblThresholdTemp: $('lblThresholdTemp'),
+        tempStatusBadge: $('tempStatusBadge'),
+
+        valHum: $('valHum'),
+        arcHum: $('arcHum'),
+        valMinHum: $('valMinHum'),
+        valMaxHum: $('valMaxHum'),
+        valHeatIndex: $('valHeatIndex'),
+
+        chamberStage: $('chamberStage'),
+        visualFanWheel: $('visualFanWheel'),
+        visualFanText: $('visualFanText'),
+        chamberStatusBanner: $('chamberStatusBanner'),
+        visualHeater1: $('visualHeater1'),
+        visualHeater2: $('visualHeater2'),
+        visualH1Text: $('visualH1Text'),
+        visualH2Text: $('visualH2Text'),
+        valActiveRelays: $('valActiveRelays'),
+        valModeSummary: $('valModeSummary'),
+        valDataSource: $('valDataSource'),
+        valLastUpdate: $('valLastUpdate'),
+
+        canvas: $('telemetryChart'),
+        tooltip: $('chartTooltip'),
+        legendTempMax: $('legendTempMax'),
+        btnPauseChart: $('btnPauseChart'),
+        btnResetChart: $('btnResetChart'),
+        btnExportCsv: $('btnExportCsv'),
+
+        btnModeAuto: $('btnModeAuto'),
+        btnModeManual: $('btnModeManual'),
+        modeBanner: $('modeBanner'),
+        modeBannerText: $('modeBannerText'),
+        btnAllOn: $('btnAllOn'),
+        btnAllOff: $('btnAllOff'),
+
+        cardRelayHeater1: $('cardRelayHeater1'),
+        cardRelayHeater2: $('cardRelayHeater2'),
+        cardRelayFan: $('cardRelayFan'),
+        stateTextHeater1: $('stateTextHeater1'),
+        stateTextHeater2: $('stateTextHeater2'),
+        stateTextFan: $('stateTextFan'),
+        toggleHeater1: $('toggleHeater1'),
+        toggleHeater2: $('toggleHeater2'),
+        toggleFan: $('toggleFan'),
+
+        metaH1Low: $('metaH1Low'),
+        metaH1High: $('metaH1High'),
+        metaH2Low: $('metaH2Low'),
+        metaH2High: $('metaH2High'),
+
+        inputTempLow: $('inputTempLow'),
+        inputTempHigh: $('inputTempHigh'),
+        selectFanRule: $('selectFanRule'),
+        inputHumHigh: $('inputHumHigh'),
+        btnSaveThresholds: $('btnSaveThresholds'),
+
+        logList: $('logList'),
+        btnClearLogs: $('btnClearLogs'),
+        telemetryTableBody: $('telemetryTableBody'),
+      };
+
+      function calcDerived(tempC, hum) {
+        const a = 17.27, b = 237.7;
+        const alpha = (a * tempC) / (b + tempC) + Math.log(Math.max(hum, 1) / 100.0);
+        const dewPoint = (b * alpha) / (a - alpha);
+        const T = (tempC * 9) / 5 + 32;
+        let HI = 0.5 * (T + 61.0 + (T - 68.0) * 1.2 + hum * 0.094);
+        if (HI >= 80) {
+          HI = -42.379 + 2.04901523 * T + 10.14333127 * hum
+            - 0.22475541 * T * hum - 0.00683783 * T * T
+            - 0.05481717 * hum * hum + 0.00122874 * T * T * hum
+            + 0.00085282 * T * hum * hum - 0.00000199 * T * T * hum * hum;
+        }
+        return {
+          heatIndex: Number((((HI - 32) * 5) / 9).toFixed(1)),
+          dewPoint: Number(dewPoint.toFixed(1)),
+        };
+      }
+
+      function formatTime(iso) {
+        return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+
+      function addLog(type, message) {
+        appState.logs.unshift({ time: new Date().toISOString(), type, message });
+        if (appState.logs.length > 40) appState.logs.pop();
+        renderLogs();
+      }
+
+      function evaluateAuto() {
+        if (appState.control.mode !== 'auto') return;
+        const { temperature, humidity } = appState.telemetry;
+        const { tempLow, tempHigh, humHigh, fanRule } = appState.control.thresholds;
+
+        if (temperature <= tempLow) {
+          appState.control.relays.heater1 = true;
+          appState.control.relays.heater2 = true;
+        } else if (temperature >= tempHigh) {
+          appState.control.relays.heater1 = false;
+          appState.control.relays.heater2 = false;
+        }
+
+        if (fanRule === 'with_heater') {
+          appState.control.relays.fan = appState.control.relays.heater1 || appState.control.relays.heater2;
+        } else if (fanRule === 'overheat_hum') {
+          if (temperature >= tempHigh || humidity >= humHigh) appState.control.relays.fan = true;
+          else if (temperature <= tempHigh - 1.0 && humidity <= humHigh - 2.5) appState.control.relays.fan = false;
+        } else {
+          appState.control.relays.fan = true;
+        }
+      }
+
+      function pushTelemetry(temp, hum, source = 'MQTT') {
+        const t = Number(Number(temp).toFixed(1));
+        const h = Number(Number(hum).toFixed(1));
+        const { heatIndex, dewPoint } = calcDerived(t, h);
+        const nowIso = new Date().toISOString();
+
+        appState.telemetry.temperature = t;
+        appState.telemetry.humidity = h;
+        appState.telemetry.heatIndex = heatIndex;
+        appState.telemetry.dewPoint = dewPoint;
+        appState.telemetry.updatedAt = nowIso;
+        appState.telemetry.source = source;
+
+        if (!appState.history.length) {
+          appState.telemetry.minTemp = t;
+          appState.telemetry.maxTemp = t;
+          appState.telemetry.minHum = h;
+          appState.telemetry.maxHum = h;
+        } else {
+          appState.telemetry.minTemp = Math.min(appState.telemetry.minTemp, t);
+          appState.telemetry.maxTemp = Math.max(appState.telemetry.maxTemp, t);
+          appState.telemetry.minHum = Math.min(appState.telemetry.minHum, h);
+          appState.telemetry.maxHum = Math.max(appState.telemetry.maxHum, h);
+        }
+
+        evaluateAuto();
+
+        appState.history.push({
+          time: nowIso,
+          temperature: t,
+          humidity: h,
+          heatIndex,
+          relays: { ...appState.control.relays },
+          mode: appState.control.mode,
+          source,
+        });
+        if (appState.history.length > 60) appState.history.shift();
+        renderAll();
+      }
+
+      // =====================================================================
+      // KONEKSI MQTT CLOUD REAL-TIME (EMQX / HIVEMQ OVER SECURE WEBSOCKET)
+      // =====================================================================
+      function connectMqttBroker() {
+        if (typeof window.mqtt === 'undefined') {
+          el.mqttStatusPill.textContent = 'Mode Offline (Tanpa Internet)';
+          return;
+        }
+
+        if (mqttClient) {
+          try { mqttClient.end(true); } catch {}
+        }
+
+        const url = appState.brokerUrl;
+        const topicTelemetry = `${appState.topicId}/telemetry`;
+        const topicControl = `${appState.topicId}/control`;
+
+        el.mqttStatusPill.textContent = 'Menyambungkan MQTT...';
+        el.mqttStatusPill.className = 'mqtt-pill-indicator connecting';
+        el.brokerShortLabel.textContent = url.includes('hivemq') ? 'HiveMQ WSS' : 'EMQX WSS';
+        el.topicShortLabel.textContent = appState.topicId;
+
+        mqttClient = window.mqtt.connect(url, {
+          clientId,
+          clean: true,
+          connectTimeout: 5000,
+          reconnectPeriod: 3000,
+        });
+
+        mqttClient.on('connect', () => {
+          appState.mqttConnected = true;
+          el.mqttStatusPill.textContent = 'Broker Terhubung ✓';
+          el.mqttStatusPill.className = 'mqtt-pill-indicator';
+          mqttClient.subscribe([topicTelemetry, topicControl]);
+          addLog('mqtt', `Terhubung ke Broker Cloud (${el.brokerShortLabel.textContent}) pada topik "${appState.topicId}".`);
+          renderAll();
+        });
+
+        mqttClient.on('message', (topic, messageBuf) => {
+          try {
+            const data = JSON.parse(messageBuf.toString());
+
+            // 1. Pesan Telemetri dari ESP32 (atau dari perangkat lain yang membuka Simulator)
+            if (topic === topicTelemetry && data.sender !== clientId) {
+              if (data.fromHardware) {
+                lastHardwareMsgAt = Date.now();
+              }
+              if (data.relays) {
+                appState.control.relays = { ...appState.control.relays, ...data.relays };
+              }
+              if (data.mode) {
+                appState.control.mode = data.mode;
+              }
+              if (data.thresholds) {
+                appState.control.thresholds = { ...appState.control.thresholds, ...data.thresholds };
+              }
+              pushTelemetry(data.temperature, data.humidity, data.fromHardware ? 'ESP32-MQTT' : 'SYNC-MQTT');
+            }
+
+            // 2. Pesan Kontrol dari HP / Laptop lain -> Sinkronkan Saklar Secara Instan!
+            if (topic === topicControl && data.sender !== clientId) {
+              if (data.mode) appState.control.mode = data.mode;
+              if (data.relays) appState.control.relays = { ...appState.control.relays, ...data.relays };
+              if (data.thresholds) {
+                appState.control.thresholds = { ...appState.control.thresholds, ...data.thresholds };
+                el.inputTempLow.value = appState.control.thresholds.tempLow;
+                el.inputTempHigh.value = appState.control.thresholds.tempHigh;
+                el.inputHumHigh.value = appState.control.thresholds.humHigh;
+                el.selectFanRule.value = appState.control.thresholds.fanRule;
+              }
+              addLog('mqtt', `[SYNC JARAK JAUH] Perintah kontrol diterima dari perangkat lain via MQTT.`);
+              renderAll();
+            }
+          } catch {}
+        });
+
+        mqttClient.on('offline', () => {
+          appState.mqttConnected = false;
+          el.mqttStatusPill.textContent = 'MQTT Terputus...';
+          el.mqttStatusPill.className = 'mqtt-pill-indicator connecting';
+          renderAll();
+        });
+      }
+
+      function publishMqttControl() {
+        if (!mqttClient || !appState.mqttConnected) return;
+        const payload = {
+          mode: appState.control.mode,
+          relays: appState.control.relays,
+          thresholds: appState.control.thresholds,
+          sender: clientId,
+          ts: Date.now(),
+        };
+        mqttClient.publish(`${appState.topicId}/control`, JSON.stringify(payload), { qos: 0, retain: true });
+      }
+
+      function publishMqttSimTelemetry() {
+        // Hanya kirim simulasi ke MQTT jika belum ada ESP32 fisik yang aktif mengirim dalam 8 detik terakhir
+        if (!mqttClient || !appState.mqttConnected) return;
+        if (Date.now() - lastHardwareMsgAt < 8000) return;
+
+        const payload = {
+          fromHardware: false,
+          sender: clientId,
+          temperature: appState.telemetry.temperature,
+          humidity: appState.telemetry.humidity,
+          mode: appState.control.mode,
+          relays: appState.control.relays,
+          thresholds: appState.control.thresholds,
+          ts: Date.now(),
+        };
+        mqttClient.publish(`${appState.topicId}/telemetry`, JSON.stringify(payload), { qos: 0, retain: true });
+      }
+
+      // =====================================================================
+      // RENDER UI & CHART
+      // =====================================================================
+      function renderAll() {
+        const { telemetry, control } = appState;
+        const espHardwareActive = Date.now() - lastHardwareMsgAt < 10000;
+
+        if (espHardwareActive) {
+          el.connectionBadge.className = 'status-badge online';
+          el.connectionText.textContent = 'ESP32 ONLINE (MQTT)';
+        } else if (appState.mqttConnected) {
+          el.connectionBadge.className = 'status-badge sim';
+          el.connectionText.textContent = 'CLOUD SIAP (SIMULASI AKTIF)';
+        } else {
+          el.connectionBadge.className = 'status-badge offline';
+          el.connectionText.textContent = 'MODE LOKAL';
+        }
+
+        // Radial Gauge Suhu
+        el.valTemp.textContent = telemetry.temperature.toFixed(1);
+        const tempRatio = Math.max(0, Math.min(1, (telemetry.temperature - 15) / 45));
+        el.arcTemp.style.strokeDashoffset = String(330 - tempRatio * 330);
+        el.valMinTemp.textContent = `${telemetry.minTemp.toFixed(1)}°C`;
+        el.valMaxTemp.textContent = `${telemetry.maxTemp.toFixed(1)}°C`;
+        el.lblThresholdTemp.textContent = `${control.thresholds.tempLow}° - ${control.thresholds.tempHigh}°C`;
+
+        const anyHeater = control.relays.heater1 || control.relays.heater2;
+        if (telemetry.temperature >= control.thresholds.tempHigh) {
+          el.tempStatusBadge.textContent = 'Cut-Off Tercapai';
+          el.tempStatusBadge.className = 'pill-status alert';
+        } else if (anyHeater) {
+          el.tempStatusBadge.textContent = 'Memanaskan';
+          el.tempStatusBadge.className = 'pill-status hot';
+        } else {
+          el.tempStatusBadge.textContent = 'Stabil';
+          el.tempStatusBadge.className = 'pill-status ok';
+        }
+
+        // Radial Gauge Kelembaban
+        el.valHum.textContent = telemetry.humidity.toFixed(1);
+        const humRatio = Math.max(0, Math.min(1, telemetry.humidity / 100));
+        el.arcHum.style.strokeDashoffset = String(330 - humRatio * 330);
+        el.valMinHum.textContent = `${telemetry.minHum.toFixed(1)}%`;
+        el.valMaxHum.textContent = `${telemetry.maxHum.toFixed(1)}%`;
+        el.valHeatIndex.textContent = `${telemetry.heatIndex.toFixed(1)}°C`;
+
+        // Chamber Visualizer
+        el.chamberStage.classList.toggle('cooling', !anyHeater);
+        el.visualFanWheel.classList.toggle('spinning', control.relays.fan);
+        el.visualFanText.textContent = control.relays.fan ? 'MENYALA (Sirkulasi Aktif)' : 'MATI (Standby)';
+        el.visualFanText.style.color = control.relays.fan ? 'var(--neon-cyan)' : 'var(--text-dim)';
+
+        el.visualHeater1.classList.toggle('glowing', control.relays.heater1);
+        el.visualH1Text.textContent = control.relays.heater1 ? 'ON • Memanaskan' : 'OFF • Standby';
+        el.visualHeater2.classList.toggle('glowing', control.relays.heater2);
+        el.visualH2Text.textContent = control.relays.heater2 ? 'ON • Memanaskan' : 'OFF • Standby';
+
+        el.chamberStatusBanner.innerHTML = anyHeater
+          ? `🔥 Pemanas Aktif • Suhu Ruang <strong>${telemetry.temperature.toFixed(1)}°C</strong> (Cut-Off: ${control.thresholds.tempHigh}°C)`
+          : `❄️ Heater Cut-Off / Standby • Suhu Ruang <strong>${telemetry.temperature.toFixed(1)}°C</strong>`;
+
+        const activeCnt = Object.values(control.relays).filter(Boolean).length;
+        el.valActiveRelays.textContent = `${activeCnt} / 3 Aktif`;
+        el.valModeSummary.textContent = control.mode.toUpperCase();
+        el.valDataSource.textContent = telemetry.source;
+        el.valLastUpdate.textContent = formatTime(telemetry.updatedAt);
+
+        // Mode & Relay Switches
+        el.btnModeAuto.classList.toggle('active', control.mode === 'auto');
+        el.btnModeManual.classList.toggle('active', control.mode === 'manual');
+        el.modeBanner.classList.toggle('manual-mode', control.mode === 'manual');
+        el.modeBannerText.innerHTML = control.mode === 'auto'
+          ? '⚡ <strong>Mode AUTO Aktif:</strong> Heater 1, Heater 2, dan Kipas diatur otomatis oleh sensor.'
+          : '🖐️ <strong>Mode MANUAL Aktif:</strong> Klik kartu atau saklar di bawah untuk kontrol jarak jauh.';
+
+        syncActuatorCard(control.relays.heater1, el.cardRelayHeater1, el.stateTextHeater1, el.toggleHeater1);
+        syncActuatorCard(control.relays.heater2, el.cardRelayHeater2, el.stateTextHeater2, el.toggleHeater2);
+        syncActuatorCard(control.relays.fan, el.cardRelayFan, el.stateTextFan, el.toggleFan);
+
+        el.metaH1Low.textContent = control.thresholds.tempLow.toFixed(1);
+        el.metaH1High.textContent = control.thresholds.tempHigh.toFixed(1);
+        el.metaH2Low.textContent = control.thresholds.tempLow.toFixed(1);
+        el.metaH2High.textContent = control.thresholds.tempHigh.toFixed(1);
+        el.legendTempMax.textContent = control.thresholds.tempHigh.toFixed(1);
+
+        if (!appState.chartPaused) drawChart();
+        renderTable();
+      }
+
+      function syncActuatorCard(isOn, card, pill, chk) {
+        chk.checked = isOn;
+        card.classList.toggle('is-on', isOn);
+        pill.textContent = isOn ? 'ON' : 'OFF';
+      }
+
+      function renderLogs() {
+        el.logList.innerHTML = appState.logs.slice(0, 20).map((l) => `
+          <div class="log-entry ${l.type}">
+            <span class="log-time">${formatTime(l.time)}</span>
+            <span>${l.message}</span>
+          </div>
+        `).join('');
+      }
+
+      function renderTable() {
+        el.telemetryTableBody.innerHTML = [...appState.history].reverse().slice(0, 10).map((r) => {
+          const rel = r.relays || appState.control.relays;
+          return `
+            <tr>
+              <td style="font-family:'JetBrains Mono',monospace">${formatTime(r.time)}</td>
+              <td><strong style="color:#ff8c5a">${r.temperature.toFixed(1)}°C</strong></td>
+              <td><strong style="color:#00e5ff">${r.humidity.toFixed(1)}%</strong></td>
+              <td><span class="pill-status ${rel.heater1 ? 'hot' : ''}">${rel.heater1 ? 'ON' : 'OFF'}</span></td>
+              <td><span class="pill-status ${rel.heater2 ? 'hot' : ''}">${rel.heater2 ? 'ON' : 'OFF'}</span></td>
+              <td><span class="pill-status ${rel.fan ? 'ok' : ''}">${rel.fan ? 'ON' : 'OFF'}</span></td>
+              <td><span class="pill-status">${r.source || 'MQTT'}</span></td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function drawChart(hoverIdx = -1) {
+        const canvas = el.canvas;
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const w = Math.max(280, rect.width - 20);
+        const h = Math.max(220, rect.height - 20);
+
+        if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+          canvas.width = w * dpr;
+          canvas.height = h * dpr;
+        }
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, w, h);
+
+        const data = appState.history;
+        if (!data.length) { ctx.restore(); return; }
+
+        const padL = 42, padR = 42, padT = 18, padB = 28;
+        const pw = w - padL - padR;
+        const ph = h - padT - padB;
+
+        const minT = 18, maxT = Math.max(50, appState.control.thresholds.tempHigh + 8);
+        const minH = 15, maxH = 100;
+
+        const yT = (v) => padT + ph - ((v - minT) / (maxT - minT)) * ph;
+        const yH = (v) => padT + ph - ((v - minH) / (maxH - minH)) * ph;
+        const xP = (i) => data.length === 1 ? padL + pw / 2 : padL + (i / (data.length - 1)) * pw;
+
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.1)';
+        ctx.font = '600 11px "JetBrains Mono", monospace';
+        for (let s = 0; s <= 4; s++) {
+          const y = padT + (s / 4) * ph;
+          ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+          ctx.fillStyle = '#ff8c5a'; ctx.textAlign = 'right';
+          ctx.fillText(`${(maxT - (s / 4) * (maxT - minT)).toFixed(0)}°`, padL - 6, y + 4);
+          ctx.fillStyle = '#00e5ff'; ctx.textAlign = 'left';
+          ctx.fillText(`${(maxH - (s / 4) * (maxH - minH)).toFixed(0)}%`, w - padR + 6, y + 4);
+        }
+
+        const cutY = yT(appState.control.thresholds.tempHigh);
+        if (cutY >= padT && cutY <= padT + ph) {
+          ctx.save();
+          ctx.setLineDash([6, 4]);
+          ctx.strokeStyle = 'rgba(244, 63, 94, 0.75)';
+          ctx.beginPath(); ctx.moveTo(padL, cutY); ctx.lineTo(w - padR, cutY); ctx.stroke();
+          ctx.restore();
+        }
+
+        function renderCurve(getter, yFn, color, fillTop) {
+          const grad = ctx.createLinearGradient(0, padT, 0, padT + ph);
+          grad.addColorStop(0, fillTop);
+          grad.addColorStop(1, 'rgba(6, 9, 19, 0)');
+
+          ctx.beginPath();
+          data.forEach((d, i) => {
+            const x = xP(i), y = yFn(getter(d));
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          });
+          ctx.lineTo(xP(data.length - 1), padT + ph);
+          ctx.lineTo(xP(0), padT + ph);
+          ctx.closePath();
+          ctx.fillStyle = grad;
+          ctx.fill();
+
+          ctx.beginPath();
+          data.forEach((d, i) => {
+            const x = xP(i), y = yFn(getter(d));
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          });
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.6;
+          ctx.stroke();
+
+          data.forEach((d, i) => {
+            const x = xP(i), y = yFn(getter(d));
+            ctx.beginPath();
+            ctx.arc(x, y, i === hoverIdx ? 5.5 : 2.8, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+          });
+        }
+
+        if (appState.chartSeries === 'both' || appState.chartSeries === 'hum') {
+          renderCurve((d) => d.humidity, yH, '#00e5ff', 'rgba(0, 229, 255, 0.22)');
+        }
+        if (appState.chartSeries === 'both' || appState.chartSeries === 'temp') {
+          renderCurve((d) => d.temperature, yT, '#ff6b2b', 'rgba(255, 107, 43, 0.25)');
+        }
+        ctx.restore();
+      }
+
+      el.canvas.addEventListener('mousemove', (e) => {
+        const data = appState.history;
+        if (!data.length) return;
+        const rect = el.canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const idx = Math.round(Math.max(0, Math.min(1, (mx - 42) / (rect.width - 84))) * (data.length - 1));
+        const pt = data[idx];
+        if (pt) {
+          drawChart(idx);
+          el.tooltip.classList.remove('hidden');
+          el.tooltip.innerHTML = `
+            <div><strong>${formatTime(pt.time)}</strong></div>
+            <div style="color:#ff8c5a">Suhu: <strong>${pt.temperature.toFixed(1)} °C</strong></div>
+            <div style="color:#00e5ff">Lembab: <strong>${pt.humidity.toFixed(1)} %RH</strong></div>
+          `;
+          el.tooltip.style.left = `${Math.min(rect.width - 150, Math.max(10, mx + 12))}px`;
+          el.tooltip.style.top = '18px';
+        }
+      });
+
+      el.canvas.addEventListener('mouseleave', () => {
+        el.tooltip.classList.add('hidden');
+        drawChart(-1);
+      });
+      window.addEventListener('resize', () => drawChart());
+
+      // =====================================================================
+      // AKSI KONTROL (SINKRON KE MQTT CLOUD + LOKAL)
+      // =====================================================================
+      async function updateControl(payload) {
+        if (payload.mode) {
+          appState.control.mode = payload.mode;
+          addLog('control', `Mode diubah ke ${payload.mode.toUpperCase()} & dikirim ke MQTT.`);
+        }
+        if (payload.relays) {
+          const names = { heater1: 'Heater 1', heater2: 'Heater 2', fan: 'Kipas Sirkulasi' };
+          for (const k of Object.keys(payload.relays)) {
+            const val = payload.relays[k];
+            if (appState.control.mode === 'auto' && appState.control.relays[k] !== val) {
+              appState.control.mode = 'manual';
+            }
+            appState.control.relays[k] = val;
+            addLog('control', `${names[k]} -> ${val ? 'ON' : 'OFF'} (Terkirim via MQTT).`);
+          }
+        }
+        if (payload.thresholds) {
+          Object.assign(appState.control.thresholds, payload.thresholds);
+          addLog('control', `Batas Termostat [${appState.control.thresholds.tempLow}°C - ${appState.control.thresholds.tempHigh}°C] dikirim ke MQTT.`);
+        }
+
+        evaluateAuto();
+        renderAll();
+        publishMqttControl();
+
+        if (appState.sourceMode === 'direct') {
+          try {
+            await fetch(`http://${appState.espIp}/api/control`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+          } catch {}
+        }
+      }
+
+      el.cardRelayHeater1.addEventListener('click', () => updateControl({ relays: { heater1: !appState.control.relays.heater1 } }));
+      el.cardRelayHeater2.addEventListener('click', () => updateControl({ relays: { heater2: !appState.control.relays.heater2 } }));
+      el.cardRelayFan.addEventListener('click', () => updateControl({ relays: { fan: !appState.control.relays.fan } }));
+
+      [el.toggleHeater1, el.toggleHeater2, el.toggleFan].forEach((chk) => {
+        chk.addEventListener('change', (e) => {
+          updateControl({ relays: { [e.target.dataset.relay]: e.target.checked } });
+        });
+      });
+
+      el.btnModeAuto.addEventListener('click', () => updateControl({ mode: 'auto' }));
+      el.btnModeManual.addEventListener('click', () => updateControl({ mode: 'manual' }));
+      el.btnAllOn.addEventListener('click', () => updateControl({ mode: 'manual', relays: { heater1: true, heater2: true, fan: true } }));
+      el.btnAllOff.addEventListener('click', () => updateControl({ mode: 'manual', relays: { heater1: false, heater2: false, fan: false } }));
+
+      el.btnSaveThresholds.addEventListener('click', () => {
+        const tempLow = parseFloat(el.inputTempLow.value);
+        const tempHigh = parseFloat(el.inputTempHigh.value);
+        const humHigh = parseFloat(el.inputHumHigh.value);
+        const fanRule = el.selectFanRule.value;
+        if (tempLow >= tempHigh) {
+          alert('Suhu Nyala harus lebih kecil dari Suhu Cut-Off.');
+          return;
+        }
+        updateControl({ thresholds: { tempLow, tempHigh, humHigh, fanRule } });
+      });
+
+      // Tab Mode Sumber
+      function setTabMode(m) {
+        appState.sourceMode = m;
+        [el.modeBtnMqtt, el.modeBtnSim, el.modeBtnDirect].forEach((b) => b.classList.remove('active'));
+        el.mqttConfigGroup.classList.add('hidden');
+        el.simQuickGroup.classList.add('hidden');
+        el.directIpGroup.classList.add('hidden');
+
+        if (m === 'mqtt') {
+          el.modeBtnMqtt.classList.add('active');
+          el.mqttConfigGroup.classList.remove('hidden');
+        } else if (m === 'sim') {
+          el.modeBtnSim.classList.add('active');
+          el.simQuickGroup.classList.remove('hidden');
+        } else {
+          el.modeBtnDirect.classList.add('active');
+          el.directIpGroup.classList.remove('hidden');
+        }
+        renderAll();
+      }
+
+      el.modeBtnMqtt.addEventListener('click', () => setTabMode('mqtt'));
+      el.modeBtnSim.addEventListener('click', () => setTabMode('sim'));
+      el.modeBtnDirect.addEventListener('click', () => setTabMode('direct'));
+
+      el.btnApplyMqtt.addEventListener('click', () => {
+        appState.brokerUrl = el.selectBroker.value;
+        appState.topicId = el.inputTopicId.value.trim() || 'esp32-dryer-panel-01';
+        localStorage.setItem('esp32_mqtt_broker', appState.brokerUrl);
+        localStorage.setItem('esp32_mqtt_topic', appState.topicId);
+        connectMqttBroker();
+      });
+
+      el.simTempSlider.addEventListener('input', (e) => {
+        const v = parseFloat(e.target.value);
+        el.simTempLabel.textContent = `${v.toFixed(1)}°C`;
+        pushTelemetry(v, appState.telemetry.humidity, 'SLIDER');
+        publishMqttSimTelemetry();
+      });
+
+      el.simHumSlider.addEventListener('input', (e) => {
+        const v = parseFloat(e.target.value);
+        el.simHumLabel.textContent = `${v.toFixed(1)}%`;
+        pushTelemetry(appState.telemetry.temperature, v, 'SLIDER');
+        publishMqttSimTelemetry();
+      });
+
+      el.chkAutoWave.addEventListener('change', (e) => { appState.autoWave = e.target.checked; });
+
+      document.querySelectorAll('[data-series]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-series]').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          appState.chartSeries = btn.dataset.series;
+          drawChart();
+        });
+      });
+
+      el.btnPauseChart.addEventListener('click', () => {
+        appState.chartPaused = !appState.chartPaused;
+        el.btnPauseChart.textContent = appState.chartPaused ? 'Lanjutkan' : 'Jeda';
+      });
+
+      el.btnResetChart.addEventListener('click', () => {
+        appState.history = [];
+        pushTelemetry(appState.telemetry.temperature, appState.telemetry.humidity, 'RESET');
+      });
+
+      el.btnExportCsv.addEventListener('click', () => {
+        const rows = appState.history.map((r) => [
+          r.time, r.temperature, r.humidity,
+          r.relays.heater1 ? 'ON' : 'OFF',
+          r.relays.heater2 ? 'ON' : 'OFF',
+          r.relays.fan ? 'ON' : 'OFF',
+          r.source,
+        ]);
+        const csv = 'data:text/csv;charset=utf-8,' +
+          ['Waktu,Suhu_C,Kelembaban_RH,Heater_1,Heater_2,Kipas,Sumber', ...rows.map((e) => e.join(','))].join('\n');
+        const a = document.createElement('a');
+        a.href = encodeURI(csv);
+        a.download = `esp32_mqtt_log_${Date.now()}.csv`;
+        a.click();
+      });
+
+      el.btnClearLogs.addEventListener('click', () => { appState.logs = []; renderLogs(); });
+      el.btnOpenGuide.addEventListener('click', () => el.guideModal.classList.remove('hidden'));
+      el.btnCloseGuide.addEventListener('click', () => el.guideModal.classList.add('hidden'));
+
+      // Inisialisasi Awal
+      el.selectBroker.value = appState.brokerUrl;
+      el.inputTopicId.value = appState.topicId;
+
+      (function seed() {
+        const now = Date.now();
+        let t = 28.8, h = 65.5;
+        for (let i = 16; i >= 1; i--) {
+          t += 0.18 + (Math.random() - 0.45) * 0.2;
+          h -= 0.15 + (Math.random() - 0.5) * 0.3;
+          const { heatIndex } = calcDerived(t, h);
+          appState.history.push({
+            time: new Date(now - i * 3000).toISOString(),
+            temperature: Number(t.toFixed(1)),
+            humidity: Number(h.toFixed(1)),
+            heatIndex,
+            relays: { ...appState.control.relays },
+            mode: 'auto',
+            source: 'SIM',
+          });
+        }
+        renderAll();
+        connectMqttBroker();
+      })();
+
+      // Loop 3 Detik (Jika belum ada ESP32 fisik yang mengirim MQTT, jalankan simulasi halus)
+      setInterval(async () => {
+        const espHardwareActive = Date.now() - lastHardwareMsgAt < 10000;
+
+        if (!espHardwareActive && (appState.sourceMode === 'sim' || appState.sourceMode === 'mqtt') && appState.autoWave) {
+          const { heater1, heater2, fan } = appState.control.relays;
+          const heatersCount = (heater1 ? 1 : 0) + (heater2 ? 1 : 0);
+          let dT = (Math.random() - 0.5) * 0.15;
+          let dH = (Math.random() - 0.5) * 0.3;
+
+          if (heatersCount > 0) {
+            dT += heatersCount * 0.3;
+            dH -= heatersCount * 0.2;
+          } else {
+            dT -= 0.32;
+            dH += 0.18;
+          }
+          if (fan && heatersCount === 0) dT -= 0.15;
+
+          const nextT = Math.max(22, Math.min(55, appState.telemetry.temperature + dT));
+          const nextH = Math.max(20, Math.min(90, appState.telemetry.humidity + dH));
+          el.simTempSlider.value = nextT.toFixed(1);
+          el.simHumSlider.value = nextH.toFixed(1);
+          el.simTempLabel.textContent = `${nextT.toFixed(1)}°C`;
+          el.simHumLabel.textContent = `${nextH.toFixed(1)}%`;
+
+          pushTelemetry(nextT, nextH, appState.mqttConnected ? 'SIM+MQTT' : 'SIM');
+          if (appState.sourceMode === 'sim') {
+            publishMqttSimTelemetry();
+          }
+        } else if (appState.sourceMode === 'direct') {
+          try {
+            const res = await fetch(`http://${appState.espIp}/api/status`);
+            const d = await res.json();
+            if (d.relays) appState.control.relays = d.relays;
+            if (d.mode) appState.control.mode = d.mode;
+            pushTelemetry(d.temperature, d.humidity, 'WIFI-IP');
+          } catch {}
+        }
+      }, 3000);
+    })();
+  </script>
+</body>
+</html>
