@@ -1,35 +1,82 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark-classic">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>ESP32 IoT Cloud Monitoring (MQTT + GitHub Pages)</title>
+  <title>ESP32 Precision Thermal &amp; Control Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- MQTT.js over WebSocket (WSS) untuk GitHub Pages, HP & Laptop -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
   <style>
-    :root {
-      --bg-deep: #060913;
-      --bg-card: rgba(19, 28, 50, 0.72);
-      --border-glass: rgba(148, 163, 184, 0.15);
-      --border-bright: rgba(56, 189, 248, 0.38);
+    /* ==========================================================================
+       TEMA 1 (DEFAULT): NEO-CLASSIC CHARCOAL & BRUSHED BRASS (Klasik-Modern Gelap)
+       ========================================================================== */
+    :root,
+    [data-theme="dark-classic"] {
+      --bg-canvas: #111215;
+      --bg-gradient: radial-gradient(circle at 18% 0%, rgba(212, 163, 89, 0.11) 0%, transparent 48%),
+                     radial-gradient(circle at 85% 10%, rgba(196, 109, 59, 0.09) 0%, transparent 45%),
+                     linear-gradient(180deg, #111215 0%, #17191e 100%);
+      --bg-surface: #1b1d23;
+      --bg-surface-2: #22252d;
+      --bg-inset: #13151a;
+      --bg-header: rgba(20, 22, 27, 0.88);
 
-      --text-main: #f8fafc;
-      --text-sub: #94a3b8;
-      --text-dim: #64748b;
+      --border-subtle: rgba(212, 163, 89, 0.16);
+      --border-frame: rgba(255, 248, 235, 0.08);
+      --border-strong: rgba(212, 163, 89, 0.45);
 
-      --neon-orange: #ff6b2b;
-      --neon-amber: #f59e0b;
-      --neon-cyan: #00e5ff;
-      --neon-blue: #38bdf8;
-      --neon-emerald: #10b981;
-      --neon-rose: #f43f5e;
+      --text-primary: #f5f0e6;
+      --text-secondary: #b0aba0;
+      --text-muted: #78746b;
 
-      --radius-xl: 22px;
-      --radius-lg: 16px;
-      --radius-md: 12px;
+      --brass: #d4a359;
+      --brass-light: #edd09d;
+      --copper: #d97236;
+      --crimson: #c94a4a;
+      --sage: #3d9970;
+      --teal: #4a9ead;
+
+      --shadow-elevated: 0 18px 40px -12px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 250, 240, 0.05);
+      --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+      --dial-face: radial-gradient(circle at 50% 45%, #242730 0%, #15171c 80%);
+      --dial-tick: rgba(245, 240, 230, 0.35);
+      --grid-line: rgba(245, 240, 230, 0.07);
+    }
+
+    /* ==========================================================================
+       TEMA 2: HERITAGE IVORY & ESPRESSO (Klasik-Modern Terang Elegan)
+       ========================================================================== */
+    [data-theme="ivory-classic"] {
+      --bg-canvas: #f3efe6;
+      --bg-gradient: radial-gradient(circle at 15% 0%, rgba(184, 134, 59, 0.10) 0%, transparent 50%),
+                     linear-gradient(180deg, #f5f1e8 0%, #ebe5d8 100%);
+      --bg-surface: #fcfaf5;
+      --bg-surface-2: #f2ede2;
+      --bg-inset: #eae3d5;
+      --bg-header: rgba(252, 250, 245, 0.90);
+
+      --border-subtle: rgba(166, 124, 62, 0.24);
+      --border-frame: rgba(44, 36, 27, 0.09);
+      --border-strong: rgba(166, 124, 62, 0.55);
+
+      --text-primary: #1f1b16;
+      --text-secondary: #5c5449;
+      --text-muted: #8c8273;
+
+      --brass: #a87932;
+      --brass-light: #8a5e1d;
+      --copper: #c85a23;
+      --crimson: #b83737;
+      --sage: #2b7a56;
+      --teal: #2c7a8b;
+
+      --shadow-elevated: 0 12px 30px -10px rgba(45, 35, 20, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      --shadow-inset: inset 0 2px 5px rgba(45, 35, 20, 0.08);
+      --dial-face: radial-gradient(circle at 50% 45%, #ffffff 0%, #ede7da 85%);
+      --dial-tick: rgba(31, 27, 22, 0.35);
+      --grid-line: rgba(31, 27, 22, 0.08);
     }
 
     * {
@@ -41,33 +88,30 @@
 
     body {
       font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      background-color: var(--bg-deep);
-      background-image:
-        radial-gradient(circle at 12% 18%, rgba(255, 107, 43, 0.14) 0%, transparent 42%),
-        radial-gradient(circle at 88% 12%, rgba(0, 229, 255, 0.13) 0%, transparent 42%),
-        radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
-        linear-gradient(180deg, #060913 0%, #0b1224 100%);
+      background-color: var(--bg-canvas);
+      background-image: var(--bg-gradient);
       background-attachment: fixed;
-      color: var(--text-main);
+      color: var(--text-primary);
       min-height: 100vh;
-      padding-bottom: 48px;
-      overflow-x: hidden;
+      padding-bottom: 52px;
+      transition: background-color 0.35s ease, color 0.35s ease;
     }
 
+    /* Subtle Fine Pinstripe Texture */
     body::before {
       content: "";
       position: fixed;
       inset: 0;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-      background-size: 36px 36px;
+      background-image: radial-gradient(var(--border-frame) 1px, transparent 1px);
+      background-size: 24px 24px;
       pointer-events: none;
       z-index: 0;
     }
 
-    /* Navbar */
-    .navbar {
+    /* ==========================================================================
+       HEADER / TOP INSTRUMENT BAR
+       ========================================================================== */
+    .topbar {
       position: sticky;
       top: 0;
       z-index: 60;
@@ -75,273 +119,289 @@
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 14px;
-      padding: 14px 26px;
-      background: rgba(8, 13, 26, 0.84);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border-glass);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      gap: 16px;
+      padding: 14px 28px;
+      background: var(--bg-header);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 15px;
     }
 
-    .brand-logo {
-      width: 46px;
-      height: 46px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(255, 107, 43, 0.25), rgba(0, 229, 255, 0.25));
-      border: 1px solid rgba(255, 107, 43, 0.45);
+    .brand-crest {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--dial-face);
+      border: 2px solid var(--brass);
+      box-shadow: 0 0 0 3px var(--border-frame), 0 6px 16px rgba(0, 0, 0, 0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 20px rgba(255, 107, 43, 0.25);
+      color: var(--brass);
+      flex-shrink: 0;
     }
 
-    .brand-logo svg {
-      color: #ff8c5a;
+    .brand-copy {
+      display: flex;
+      flex-direction: column;
     }
 
-    .brand-text h1 {
-      font-size: 1.15rem;
-      font-weight: 800;
-      letter-spacing: -0.3px;
-      background: linear-gradient(90deg, #ffffff 0%, #cbd5e1 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    .brand-eyebrow {
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 2.2px;
+      text-transform: uppercase;
+      color: var(--brass);
     }
 
-    .brand-text p {
-      font-size: 0.76rem;
-      color: var(--text-sub);
+    .brand-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.55rem;
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: 0.2px;
+      color: var(--text-primary);
     }
 
-    .nav-right {
+    .nav-actions {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
       gap: 10px;
     }
 
-    .status-badge {
+    /* Classic Jewel Status Indicator */
+    .jewel-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
       padding: 7px 14px;
       border-radius: 999px;
-      font-size: 0.73rem;
-      font-weight: 800;
-      letter-spacing: 0.5px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-inset);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
       text-transform: uppercase;
     }
 
-    .status-badge.online {
-      background: rgba(16, 185, 129, 0.16);
-      color: var(--neon-emerald);
-      border: 1px solid rgba(16, 185, 129, 0.45);
-      box-shadow: 0 0 18px rgba(16, 185, 129, 0.2);
-    }
-
-    .status-badge.sim {
-      background: rgba(0, 229, 255, 0.12);
-      color: var(--neon-cyan);
-      border: 1px solid rgba(0, 229, 255, 0.4);
-    }
-
-    .status-badge.offline {
-      background: rgba(244, 63, 94, 0.16);
-      color: var(--neon-rose);
-      border: 1px solid rgba(244, 63, 94, 0.45);
-    }
-
-    .dot-pulse {
-      width: 8px;
-      height: 8px;
+    .jewel-lamp {
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      background: currentColor;
-      box-shadow: 0 0 10px currentColor;
-      animation: pulseGlow 1.6s infinite ease-in-out;
+      background: var(--sage);
+      border: 1.5px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 0 10px var(--sage);
+      animation: lampBreathe 2.2s infinite ease-in-out;
     }
 
-    @keyframes pulseGlow {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(0.75); opacity: 0.45; }
+    .jewel-badge.sim .jewel-lamp {
+      background: var(--brass);
+      box-shadow: 0 0 10px var(--brass);
     }
 
-    .chip-meta {
-      display: flex;
+    .jewel-badge.offline .jewel-lamp {
+      background: var(--crimson);
+      box-shadow: 0 0 10px var(--crimson);
+    }
+
+    @keyframes lampBreathe {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.55; transform: scale(0.88); }
+    }
+
+    .meta-plaque {
+      display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 7px 12px;
-      border-radius: 11px;
-      background: rgba(15, 23, 42, 0.78);
-      border: 1px solid var(--border-glass);
+      padding: 7px 13px;
+      border-radius: 8px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-frame);
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.74rem;
-      color: var(--text-sub);
+      color: var(--text-secondary);
     }
 
-    .btn-glass {
+    /* Classic-Modern Buttons */
+    .btn-classic {
       display: inline-flex;
       align-items: center;
       gap: 7px;
       padding: 8px 14px;
-      border-radius: 11px;
-      font-family: inherit;
-      font-size: 0.79rem;
-      font-weight: 700;
-      color: var(--text-main);
-      background: rgba(30, 41, 59, 0.78);
-      border: 1px solid var(--border-glass);
+      border-radius: 9px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      background: var(--bg-surface-2);
+      border: 1px solid var(--border-subtle);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.22s ease;
     }
 
-    .btn-glass:hover {
-      border-color: var(--neon-blue);
+    .btn-classic:hover {
+      border-color: var(--brass);
       transform: translateY(-1px);
     }
 
-    .btn-glass.primary {
-      background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
-      border-color: rgba(56, 189, 248, 0.5);
-      box-shadow: 0 4px 16px rgba(14, 165, 233, 0.28);
+    .btn-classic.gold {
+      background: linear-gradient(135deg, #c89646 0%, #a67326 100%);
+      color: #fffaf0;
+      border-color: #deb268;
+      box-shadow: 0 4px 14px rgba(180, 128, 48, 0.32);
     }
 
-    .wrapper {
+    .btn-classic.gold:hover {
+      filter: brightness(1.07);
+    }
+
+    /* ==========================================================================
+       MAIN CONTAINER & INSTRUMENT CARDS
+       ========================================================================== */
+    .container {
       position: relative;
       z-index: 1;
-      max-width: 1420px;
-      margin: 20px auto 0;
-      padding: 0 22px;
+      max-width: 1400px;
+      margin: 22px auto 0;
+      padding: 0 24px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 22px;
     }
 
-    .glass-card {
-      background: var(--bg-card);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border-glass);
-      border-radius: var(--radius-xl);
-      padding: 20px;
-      box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.5);
+    .panel-card {
+      position: relative;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: var(--shadow-elevated);
+      transition: background 0.3s ease, border-color 0.3s ease;
     }
 
-    /* MQTT Cloud Bar */
-    .mqtt-bar {
+    /* Corner Rivet / Hairline Accent for Classic Instrument Feel */
+    .panel-card::before {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border-radius: 12px;
+      border: 1px solid var(--border-frame);
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       CONNECTION & SIMULATOR CONSOLE BAR
+       ========================================================================== */
+    .console-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 14px;
       padding: 14px 20px;
-      border-radius: var(--radius-lg);
-      background: linear-gradient(90deg, rgba(14, 23, 45, 0.92) 0%, rgba(19, 36, 66, 0.88) 100%);
-      border: 1px solid rgba(0, 229, 255, 0.24);
     }
 
-    .toolbar-group {
+    .console-group {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
       gap: 10px;
     }
 
-    .seg-tabs {
+    .segmented {
       display: inline-flex;
-      background: rgba(6, 9, 19, 0.85);
+      background: var(--bg-inset);
       padding: 4px;
-      border-radius: 12px;
-      border: 1px solid var(--border-glass);
+      border-radius: 10px;
+      border: 1px solid var(--border-frame);
+      box-shadow: var(--shadow-inset);
     }
 
-    .seg-btn {
+    .seg-item {
       border: none;
       background: transparent;
-      color: var(--text-sub);
-      padding: 7px 13px;
+      color: var(--text-secondary);
+      padding: 6px 13px;
       font-family: inherit;
       font-size: 0.76rem;
-      font-weight: 700;
-      border-radius: 9px;
+      font-weight: 600;
+      border-radius: 7px;
       cursor: pointer;
       transition: all 0.2s ease;
     }
 
-    .seg-btn.active {
-      background: linear-gradient(135deg, #1e293b, #334155);
-      color: var(--neon-cyan);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    .seg-item.active {
+      background: var(--bg-surface-2);
+      color: var(--brass);
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 
-    .mqtt-input, .mqtt-select {
-      background: rgba(6, 9, 19, 0.85);
-      border: 1px solid var(--border-glass);
-      color: var(--text-main);
+    .input-classic, .select-classic {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
       padding: 7px 11px;
-      border-radius: 9px;
+      border-radius: 8px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.78rem;
       outline: none;
     }
 
-    .mqtt-input:focus, .mqtt-select:focus {
-      border-color: var(--neon-cyan);
+    .select-classic {
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    .mqtt-pill-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.74rem;
+    .broker-tag {
+      font-size: 0.73rem;
       font-weight: 700;
       padding: 5px 11px;
-      border-radius: 8px;
-      background: rgba(16, 185, 129, 0.14);
-      color: var(--neon-emerald);
-      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 7px;
+      background: rgba(61, 153, 112, 0.14);
+      color: var(--sage);
+      border: 1px solid rgba(61, 153, 112, 0.35);
     }
 
-    .mqtt-pill-indicator.connecting {
-      background: rgba(245, 158, 11, 0.15);
-      color: var(--neon-amber);
-      border-color: rgba(245, 158, 11, 0.35);
+    .broker-tag.wait {
+      background: rgba(212, 163, 89, 0.14);
+      color: var(--brass);
+      border-color: var(--border-subtle);
     }
 
-    .sim-pill {
+    .slider-plaque {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(6, 9, 19, 0.65);
-      border: 1px solid var(--border-glass);
+      background: var(--bg-inset);
+      border: 1px solid var(--border-frame);
       padding: 5px 12px;
-      border-radius: 10px;
+      border-radius: 8px;
       font-size: 0.76rem;
+      color: var(--text-secondary);
     }
 
-    .sim-pill strong {
+    .slider-plaque strong {
       font-family: 'JetBrains Mono', monospace;
-      color: var(--neon-orange);
-    }
-
-    .sim-pill.hum strong {
-      color: var(--neon-cyan);
+      color: var(--brass);
     }
 
     input[type="range"] {
       -webkit-appearance: none;
       appearance: none;
-      width: 95px;
-      height: 6px;
+      width: 92px;
+      height: 5px;
       border-radius: 99px;
-      background: #1e293b;
-      outline: none;
+      background: var(--bg-surface-2);
+      border: 1px solid var(--border-subtle);
       cursor: pointer;
     }
 
@@ -350,933 +410,895 @@
       width: 15px;
       height: 15px;
       border-radius: 50%;
-      background: var(--neon-cyan);
-      box-shadow: 0 0 10px var(--neon-cyan);
+      background: var(--brass);
+      border: 2px solid #fffaf0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
       cursor: pointer;
     }
 
-    .hidden {
-      display: none !important;
-    }
+    .hidden { display: none !important; }
 
-    /* HERO GRID */
+    /* ==========================================================================
+       HERO SECTION: ANALOG CHRONOGRAPH DIAL GAUGES + OBSERVATION WINDOW
+       ========================================================================== */
     .hero-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 1.35fr;
-      gap: 20px;
+      grid-template-columns: 1fr 1fr 1.32fr;
+      gap: 22px;
     }
 
-    .gauge-card {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      overflow: hidden;
-    }
-
-    .gauge-card::after {
-      content: "";
-      position: absolute;
-      top: -40%;
-      right: -30%;
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      filter: blur(55px);
-      pointer-events: none;
-      opacity: 0.32;
-    }
-
-    .gauge-card.temp-theme::after { background: var(--neon-orange); }
-    .gauge-card.hum-theme::after { background: var(--neon-cyan); }
-
-    .card-top {
+    .card-header-line {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
+      align-items: flex-start;
+      margin-bottom: 10px;
     }
 
-    .card-tag {
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      color: var(--text-sub);
-    }
-
-    .pill-status {
-      font-size: 0.71rem;
+    .classic-kicker {
+      display: block;
+      font-size: 0.66rem;
       font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 99px;
-      background: rgba(148, 163, 184, 0.14);
-      color: var(--text-sub);
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--brass);
+      margin-bottom: 2px;
     }
 
-    .pill-status.ok {
-      background: rgba(16, 185, 129, 0.16);
-      color: var(--neon-emerald);
-      border: 1px solid rgba(16, 185, 129, 0.35);
+    .classic-heading {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: var(--text-primary);
     }
 
-    .pill-status.hot {
-      background: rgba(255, 107, 43, 0.18);
-      color: #ff8c5a;
-      border: 1px solid rgba(255, 107, 43, 0.4);
+    .tag-pill {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      color: var(--brass);
     }
 
-    .pill-status.alert {
-      background: rgba(244, 63, 94, 0.2);
-      color: var(--neon-rose);
-      border: 1px solid rgba(244, 63, 94, 0.45);
+    .tag-pill.ok {
+      color: var(--sage);
+      border-color: rgba(61, 153, 112, 0.4);
+      background: rgba(61, 153, 112, 0.1);
     }
 
-    .radial-wrap {
+    .tag-pill.hot {
+      color: var(--copper);
+      border-color: rgba(217, 114, 54, 0.45);
+      background: rgba(217, 114, 54, 0.12);
+    }
+
+    .tag-pill.alert {
+      color: var(--crimson);
+      border-color: rgba(201, 74, 74, 0.45);
+      background: rgba(201, 74, 74, 0.12);
+    }
+
+    /* Precision Analog Watch Dial Container */
+    .analog-dial-wrap {
       position: relative;
-      width: 190px;
-      height: 155px;
-      margin: 4px auto 6px;
+      width: 215px;
+      height: 185px;
+      margin: 4px auto 10px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    .radial-svg {
-      width: 190px;
-      height: 155px;
+    .analog-dial-bezel {
+      position: relative;
+      width: 196px;
+      height: 196px;
+      border-radius: 50%;
+      background: var(--dial-face);
+      border: 3px solid var(--brass);
+      box-shadow:
+        0 0 0 5px var(--bg-surface-2),
+        0 0 0 6px var(--border-subtle),
+        inset 0 8px 20px rgba(0, 0, 0, 0.45),
+        0 12px 24px rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dial-svg {
+      width: 186px;
+      height: 186px;
       overflow: visible;
     }
 
-    .radial-bg {
-      fill: none;
-      stroke: rgba(148, 163, 184, 0.14);
-      stroke-width: 13;
-      stroke-linecap: round;
+    .needle-group {
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+      transform-origin: 100px 100px;
     }
 
-    .radial-bar {
-      fill: none;
-      stroke-width: 13;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .radial-center {
+    .dial-digital-readout {
       position: absolute;
-      top: 54%;
+      bottom: 24px;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translateX(-50%);
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 7px;
+      padding: 3px 11px;
       text-align: center;
+      box-shadow: var(--shadow-inset);
+      min-width: 88px;
     }
 
-    .big-metric {
+    .dial-digital-num {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 2.35rem;
-      font-weight: 800;
-      line-height: 1;
-      letter-spacing: -1px;
-    }
-
-    .metric-unit {
-      font-size: 0.82rem;
+      font-size: 1.22rem;
       font-weight: 700;
-      color: var(--text-sub);
-      margin-top: 3px;
+      color: var(--text-primary);
+      line-height: 1.15;
     }
 
-    .gauge-footer {
+    .dial-digital-unit {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--brass);
+      text-transform: uppercase;
+    }
+
+    .plaque-footer {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
       padding-top: 12px;
-      border-top: 1px solid var(--border-glass);
+      border-top: 1px solid var(--border-frame);
       text-align: center;
     }
 
-    .mini-stat span {
+    .plaque-col span {
       display: block;
-      font-size: 0.67rem;
-      color: var(--text-dim);
-      text-transform: uppercase;
+      font-size: 0.65rem;
       font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 2px;
     }
 
-    .mini-stat strong {
+    .plaque-col strong {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.83rem;
-      color: var(--text-main);
+      font-size: 0.82rem;
+      color: var(--text-primary);
     }
 
-    /* Chamber Visualizer */
-    .chamber-card {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      background: linear-gradient(160deg, rgba(17, 24, 39, 0.86), rgba(10, 15, 29, 0.94));
-    }
-
-    .chamber-stage {
+    /* Classic Glass Observation Window (2 Heater + 1 Kipas) */
+    .chamber-window {
       position: relative;
-      height: 168px;
-      margin: 6px 0 10px;
-      border-radius: var(--radius-lg);
-      background: radial-gradient(circle at 50% 85%, rgba(255, 107, 43, 0.17), rgba(6, 9, 19, 0.92) 75%);
-      border: 1px solid rgba(255, 107, 43, 0.3);
-      overflow: hidden;
+      height: 188px;
+      margin: 4px 0 12px;
+      border-radius: 12px;
+      background: radial-gradient(circle at 50% 92%, rgba(217, 114, 54, 0.22), var(--bg-inset) 76%);
+      border: 2px solid var(--border-subtle);
+      box-shadow: var(--shadow-inset);
+      padding: 14px 18px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 12px 16px;
+      overflow: hidden;
       transition: all 0.5s ease;
     }
 
-    .chamber-stage.cooling {
-      background: radial-gradient(circle at 50% 30%, rgba(0, 229, 255, 0.14), rgba(6, 9, 19, 0.92) 75%);
-      border-color: rgba(0, 229, 255, 0.28);
+    .chamber-window.standby {
+      background: radial-gradient(circle at 50% 25%, rgba(74, 158, 173, 0.14), var(--bg-inset) 76%);
     }
 
-    .chamber-fan-box {
+    .turbine-row {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 10px;
+      justify-content: space-between;
+      gap: 12px;
     }
 
-    .fan-wheel {
-      width: 40px;
-      height: 40px;
+    .turbine-unit {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .brass-rotor {
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
-      background: rgba(15, 23, 42, 0.9);
-      border: 2px solid var(--border-glass);
+      background: var(--bg-surface);
+      border: 2px solid var(--border-subtle);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--text-dim);
-      transition: all 0.3s ease;
+      color: var(--text-muted);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
     }
 
-    .fan-wheel.spinning {
-      border-color: var(--neon-cyan);
-      color: var(--neon-cyan);
-      box-shadow: 0 0 18px rgba(0, 229, 255, 0.4);
+    .brass-rotor.spinning {
+      border-color: var(--brass);
+      color: var(--brass);
+      box-shadow: 0 0 16px rgba(212, 163, 89, 0.28);
     }
 
-    .fan-wheel.spinning svg {
-      animation: rotateFan 1.1s linear infinite;
+    .brass-rotor.spinning svg {
+      animation: spinSmooth 1.25s linear infinite;
     }
 
-    @keyframes rotateFan {
+    @keyframes spinSmooth {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
 
-    .chamber-temp-badge {
-      display: inline-block;
-      padding: 4px 13px;
+    .window-readout-pill {
+      align-self: center;
+      padding: 5px 15px;
       border-radius: 99px;
-      background: rgba(6, 9, 19, 0.8);
-      border: 1px solid var(--border-glass);
-      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
       font-size: 0.76rem;
-      font-weight: 700;
+      font-weight: 600;
+      color: var(--text-primary);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
-    .chamber-heaters-row {
-      display: flex;
-      justify-content: space-between;
+    .filament-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
 
-    .heater-coil-unit {
-      flex: 1;
-      padding: 8px 12px;
-      border-radius: 10px;
-      background: rgba(15, 23, 42, 0.88);
-      border: 1px solid var(--border-glass);
+    .filament-box {
+      padding: 9px 13px;
+      border-radius: 9px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-frame);
       display: flex;
       align-items: center;
       justify-content: space-between;
       transition: all 0.3s ease;
     }
 
-    .heater-coil-unit.glowing {
-      background: linear-gradient(90deg, rgba(255, 107, 43, 0.25), rgba(244, 63, 94, 0.2));
-      border-color: var(--neon-orange);
-      box-shadow: 0 0 20px rgba(255, 107, 43, 0.35);
+    .filament-box.active {
+      border-color: var(--copper);
+      background: linear-gradient(90deg, rgba(217, 114, 54, 0.18), var(--bg-surface));
+      box-shadow: 0 0 18px rgba(217, 114, 54, 0.18);
     }
 
-    .coil-bars { display: flex; gap: 4px; }
-    .coil-bar {
-      width: 5px;
+    .filament-wires {
+      display: flex;
+      gap: 4px;
+    }
+
+    .wire {
+      width: 4px;
       height: 18px;
-      border-radius: 4px;
-      background: #334155;
+      border-radius: 3px;
+      background: var(--text-muted);
+      opacity: 0.35;
+      transition: all 0.3s ease;
     }
 
-    .heater-coil-unit.glowing .coil-bar {
-      background: #ff6b2b;
-      box-shadow: 0 0 8px #ff6b2b;
-      animation: coilPulse 1.2s infinite alternate;
+    .filament-box.active .wire {
+      background: var(--copper);
+      opacity: 1;
+      box-shadow: 0 0 8px var(--copper);
+      animation: glowWire 1.1s infinite alternate;
     }
 
-    @keyframes coilPulse {
+    @keyframes glowWire {
       from { opacity: 0.7; transform: scaleY(0.92); }
-      to { opacity: 1; transform: scaleY(1.08); }
+      to { opacity: 1; transform: scaleY(1.06); }
     }
 
-    .coil-label { font-size: 0.74rem; font-weight: 800; }
-    .coil-state {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: var(--text-sub);
-    }
-    .heater-coil-unit.glowing .coil-state { color: #ff9e6d; }
-
-    /* MAIN GRID */
+    /* ==========================================================================
+       ROW 2: CHART + TACTILE MECHANICAL-MODERN SWITCHBOARD
+       ========================================================================== */
     .main-grid {
       display: grid;
       grid-template-columns: 1.38fr 1fr;
+      gap: 22px;
+    }
+
+    .chart-legend {
+      display: flex;
       gap: 20px;
-    }
-
-    .section-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 15px;
-    }
-
-    .section-head h2 { font-size: 1.06rem; font-weight: 800; }
-    .section-head p { font-size: 0.77rem; color: var(--text-sub); }
-
-    .chart-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-    .chart-legend-row {
-      display: flex;
-      gap: 18px;
-      flex-wrap: wrap;
-      font-size: 0.77rem;
-      color: var(--text-sub);
+      font-size: 0.76rem;
+      color: var(--text-secondary);
       margin-bottom: 12px;
     }
 
-    .legend-chip { display: inline-flex; align-items: center; gap: 7px; }
-    .dot-indicator { width: 10px; height: 10px; border-radius: 50%; }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
 
-    .canvas-container {
+    .swatch {
+      width: 12px;
+      height: 4px;
+      border-radius: 2px;
+    }
+
+    .chart-frame {
       position: relative;
       width: 100%;
       height: 340px;
-      background: rgba(6, 9, 19, 0.65);
-      border: 1px solid var(--border-glass);
-      border-radius: var(--radius-lg);
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
       padding: 10px;
+      box-shadow: var(--shadow-inset);
     }
 
-    #telemetryChart { width: 100%; height: 100%; display: block; }
+    #telemetryChart {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
 
     .chart-tooltip {
       position: absolute;
       pointer-events: none;
-      background: rgba(11, 18, 36, 0.95);
-      border: 1px solid var(--border-bright);
-      border-radius: 10px;
-      padding: 9px 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--brass);
+      border-radius: 8px;
+      padding: 8px 12px;
       font-size: 0.75rem;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
       z-index: 20;
     }
 
-    /* Actuator Control Center */
-    .mode-switcher-pill {
-      display: inline-flex;
-      background: rgba(6, 9, 19, 0.88);
-      padding: 4px;
-      border-radius: 12px;
-      border: 1px solid var(--border-glass);
-    }
-
-    .mode-pill-btn {
-      border: none;
-      background: transparent;
-      color: var(--text-sub);
-      padding: 6px 15px;
-      font-family: inherit;
-      font-size: 0.75rem;
-      font-weight: 800;
-      border-radius: 9px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .mode-pill-btn.active {
-      background: linear-gradient(135deg, #00e5ff, #0284c7);
-      color: #060913;
-      box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
-    }
-
-    .mode-info-strip {
+    /* Switchboard Right Column */
+    .mode-banner-classic {
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
       flex-wrap: wrap;
       gap: 10px;
       padding: 10px 14px;
-      border-radius: var(--radius-md);
+      border-radius: 10px;
+      background: var(--bg-inset);
+      border-left: 3px solid var(--brass);
+      border-top: 1px solid var(--border-frame);
+      border-right: 1px solid var(--border-frame);
+      border-bottom: 1px solid var(--border-frame);
       font-size: 0.77rem;
+      color: var(--text-secondary);
       margin-bottom: 14px;
-      background: rgba(0, 229, 255, 0.08);
-      border: 1px solid rgba(0, 229, 255, 0.28);
-      color: #bae6fd;
     }
 
-    .mode-info-strip.manual-mode {
-      background: rgba(245, 158, 11, 0.1);
-      border-color: rgba(245, 158, 11, 0.35);
-      color: #fde68a;
-    }
-
-    .actuator-list {
+    .switchboard-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 11px;
       margin-bottom: 16px;
     }
 
-    .actuator-card {
+    .switch-unit {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 13px 16px;
-      border-radius: var(--radius-lg);
-      background: rgba(10, 16, 31, 0.85);
-      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      background: var(--bg-surface-2);
+      border: 1px solid var(--border-frame);
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: all 0.22s ease;
     }
 
-    .actuator-card:hover {
-      transform: translateY(-2px);
-      border-color: rgba(148, 163, 184, 0.35);
+    .switch-unit:hover {
+      border-color: var(--brass);
+      transform: translateY(-1px);
     }
 
-    .actuator-card.is-on.heater-type {
-      background: linear-gradient(135deg, rgba(255, 107, 43, 0.17) 0%, rgba(15, 23, 42, 0.9) 100%);
-      border-color: rgba(255, 107, 43, 0.6);
-      box-shadow: 0 8px 25px -6px rgba(255, 107, 43, 0.3);
+    .switch-unit.is-on {
+      border-color: var(--border-strong);
+      background: linear-gradient(135deg, rgba(212, 163, 89, 0.11) 0%, var(--bg-surface-2) 100%);
     }
 
-    .actuator-card.is-on.fan-type {
-      background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%);
-      border-color: rgba(0, 229, 255, 0.6);
-      box-shadow: 0 8px 25px -6px rgba(0, 229, 255, 0.28);
+    .unit-left {
+      display: flex;
+      align-items: center;
+      gap: 13px;
     }
 
-    .act-left { display: flex; align-items: center; gap: 13px; }
-    .act-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 13px;
-      background: rgba(30, 41, 59, 0.8);
-      border: 1px solid var(--border-glass);
+    /* Classic Pilot Lamp Bezel */
+    .pilot-bezel {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--bg-inset);
+      border: 2px solid var(--border-subtle);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--text-sub);
+      color: var(--text-muted);
+      box-shadow: var(--shadow-inset);
+      transition: all 0.3s ease;
     }
 
-    .actuator-card.is-on.heater-type .act-icon {
-      background: rgba(255, 107, 43, 0.22);
-      border-color: var(--neon-orange);
-      color: var(--neon-orange);
+    .switch-unit.is-on.heater-kind .pilot-bezel {
+      border-color: var(--copper);
+      color: var(--copper);
+      background: rgba(217, 114, 54, 0.15);
+      box-shadow: 0 0 14px rgba(217, 114, 54, 0.3);
     }
 
-    .actuator-card.is-on.fan-type .act-icon {
-      background: rgba(0, 229, 255, 0.2);
-      border-color: var(--neon-cyan);
-      color: var(--neon-cyan);
+    .switch-unit.is-on.fan-kind .pilot-bezel {
+      border-color: var(--brass);
+      color: var(--brass);
+      background: rgba(212, 163, 89, 0.15);
+      box-shadow: 0 0 14px rgba(212, 163, 89, 0.28);
     }
 
-    .act-title { font-size: 0.92rem; font-weight: 800; }
-    .act-sub { font-size: 0.73rem; color: var(--text-sub); }
-    .act-sub code {
+    .unit-name {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.1;
+    }
+
+    .unit-meta {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .unit-meta code {
       font-family: 'JetBrains Mono', monospace;
-      color: #cbd5e1;
-      background: rgba(255, 255, 255, 0.07);
-      padding: 1px 5px;
-      border-radius: 4px;
+      font-size: 0.7rem;
+      color: var(--brass);
     }
 
-    .act-right { display: flex; align-items: center; gap: 12px; }
-    .power-pill {
+    .unit-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-stamp {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.73rem;
-      font-weight: 800;
-      padding: 4px 9px;
-      border-radius: 7px;
-      background: rgba(148, 163, 184, 0.12);
-      color: var(--text-dim);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      padding: 3px 9px;
+      border-radius: 5px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-frame);
+      color: var(--text-muted);
     }
 
-    .actuator-card.is-on.heater-type .power-pill { background: rgba(255, 107, 43, 0.22); color: #ff9e6d; }
-    .actuator-card.is-on.fan-type .power-pill { background: rgba(0, 229, 255, 0.2); color: var(--neon-cyan); }
-
-    .neo-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
-    .neo-switch input { opacity: 0; width: 0; height: 0; }
-    .neo-slider {
-      position: absolute; cursor: pointer; inset: 0;
-      background: #1e293b; border: 1px solid var(--border-glass);
-      border-radius: 99px; transition: 0.25s;
-    }
-    .neo-slider::before {
-      position: absolute; content: ""; height: 18px; width: 18px;
-      left: 3px; bottom: 3px; background: #94a3b8; border-radius: 50%;
-      transition: 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    input:checked + .neo-slider {
-      background: rgba(16, 185, 129, 0.25);
-      border-color: var(--neon-emerald);
-    }
-    input:checked + .neo-slider::before {
-      transform: translateX(22px);
-      background: var(--neon-emerald);
-      box-shadow: 0 0 8px var(--neon-emerald);
+    .switch-unit.is-on .status-stamp {
+      color: var(--brass);
+      border-color: var(--brass);
     }
 
-    /* Thermostat Settings */
-    .thermostat-panel {
-      background: rgba(6, 9, 19, 0.65);
-      border: 1px solid var(--border-glass);
-      border-radius: var(--radius-lg);
+    /* Tactile Brass Lever Toggle */
+    .brass-toggle {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+
+    .brass-toggle input { opacity: 0; width: 0; height: 0; }
+
+    .brass-track {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 99px;
+      box-shadow: var(--shadow-inset);
+      transition: 0.26s ease;
+    }
+
+    .brass-track::before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #9ca3af, #6b7280);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
+      transition: 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    input:checked + .brass-track {
+      background: rgba(212, 163, 89, 0.22);
+      border-color: var(--brass);
+    }
+
+    input:checked + .brass-track::before {
+      transform: translateX(24px);
+      background: linear-gradient(145deg, #f3d7a2, #c5913e);
+      box-shadow: 0 0 10px rgba(212, 163, 89, 0.6);
+    }
+
+    /* Thermostat Calibration Subpanel */
+    .calibration-box {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-frame);
+      border-radius: 12px;
       padding: 14px;
     }
 
-    .thermostat-head {
+    .cal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 11px;
     }
 
-    .thermostat-head h4 {
-      font-size: 0.8rem;
-      font-weight: 800;
-      color: var(--text-sub);
+    .cal-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
       text-transform: uppercase;
+      color: var(--brass);
     }
 
-    .thermostat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .field-box label { display: block; font-size: 0.71rem; color: var(--text-sub); margin-bottom: 4px; font-weight: 600; }
-    .field-input {
-      display: flex; align-items: center;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid var(--border-glass);
-      border-radius: 9px; padding: 6px 10px;
+    .cal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
-    .field-input input, .field-input select {
-      width: 100%; background: transparent; border: none;
-      color: var(--text-main); font-family: 'JetBrains Mono', monospace;
-      font-size: 0.83rem; font-weight: 700; outline: none;
-    }
-    .field-input select { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.77rem; }
-    .field-input select option { background: #0f172a; color: #f8fafc; }
 
-    /* Bottom Row */
-    .bottom-grid { display: grid; grid-template-columns: 1fr 1.38fr; gap: 20px; }
-    .log-feed { max-height: 245px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-    .log-entry {
-      display: flex; gap: 10px; align-items: flex-start;
-      padding: 9px 12px; border-radius: 10px;
-      background: rgba(6, 9, 19, 0.65);
-      border-left: 3px solid var(--neon-blue);
+    .cal-field label {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .cal-input-wrap {
+      display: flex;
+      align-items: center;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 6px 10px;
+    }
+
+    .cal-input-wrap input, .cal-input-wrap select {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .cal-input-wrap select {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.76rem;
+    }
+
+    .cal-input-wrap select option {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+    }
+
+    /* ==========================================================================
+       ROW 3: JOURNAL LOG & TELEMETRY LEDGER TABLE
+       ========================================================================== */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.38fr;
+      gap: 22px;
+    }
+
+    .journal-list {
+      max-height: 245px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .journal-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: var(--bg-inset);
+      border-left: 3px solid var(--brass);
       font-size: 0.78rem;
+      color: var(--text-primary);
     }
-    .log-entry.control { border-left-color: var(--neon-orange); }
-    .log-entry.mqtt { border-left-color: var(--neon-emerald); }
-    .log-time { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-dim); white-space: nowrap; }
 
-    .table-wrap { overflow-x: auto; }
-    .modern-table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
-    .modern-table th, .modern-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-glass); }
-    .modern-table th { font-size: 0.7rem; text-transform: uppercase; color: var(--text-sub); background: rgba(6, 9, 19, 0.55); }
+    .journal-row.mqtt { border-left-color: var(--sage); }
+    .journal-row.control { border-left-color: var(--copper); }
 
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(3, 6, 14, 0.8);
-      backdrop-filter: blur(8px); display: flex; align-items: center;
-      justify-content: center; padding: 20px; z-index: 100;
+    .journal-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      white-space: nowrap;
     }
-    .modal-box { max-width: 860px; width: 100%; max-height: 90vh; overflow-y: auto; }
+
+    .ledger-wrap { overflow-x: auto; }
+    .ledger-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.79rem;
+    }
+
+    .ledger-table th, .ledger-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-frame);
+    }
+
+    .ledger-table th {
+      font-size: 0.68rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--brass);
+      background: var(--bg-inset);
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 10, 12, 0.76);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+    }
+
+    .modal-sheet {
+      max-width: 840px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
 
     @media (max-width: 1180px) {
       .hero-grid { grid-template-columns: 1fr 1fr; }
-      .chamber-card { grid-column: span 2; }
+      .chamber-panel { grid-column: span 2; }
       .main-grid, .bottom-grid { grid-template-columns: 1fr; }
     }
+
     @media (max-width: 680px) {
-      .navbar { padding: 12px 15px; }
-      .wrapper { padding: 0 14px; }
+      .topbar { padding: 12px 16px; }
+      .container { padding: 0 14px; }
       .hero-grid { grid-template-columns: 1fr; }
-      .chamber-card { grid-column: span 1; }
-      .thermostat-grid { grid-template-columns: 1fr; }
+      .chamber-panel { grid-column: span 1; }
+      .cal-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <!-- TOP GLASS NAVBAR -->
-  <header class="navbar">
+  <!-- TOP INSTRUMENT HEADER -->
+  <header class="topbar">
     <div class="brand">
-      <div class="brand-logo">
-        <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="2.2">
-          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-          <circle cx="12" cy="12" r="4" />
+      <div class="brand-crest">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 3" />
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" />
         </svg>
       </div>
-      <div class="brand-text">
-        <h1>ESP32 Cloud IoT Command Center</h1>
-        <p>GitHub Pages + MQTT Real-Time (2 Heater &amp; 1 Kipas)</p>
+      <div class="brand-copy">
+        <span class="brand-eyebrow">ESP32 Telemetry &amp; Thermal Instrument</span>
+        <h1 class="brand-title">Precision Monitoring &amp; Control Studio</h1>
       </div>
     </div>
 
-    <div class="nav-right">
-      <div id="connectionBadge" class="status-badge online">
-        <span class="dot-pulse"></span>
+    <div class="nav-actions">
+      <div id="connectionBadge" class="jewel-badge">
+        <span class="jewel-lamp"></span>
         <span id="connectionText">MQTT CLOUD AKTIF</span>
       </div>
 
-      <div class="chip-meta">
+      <div class="meta-plaque">
         <span id="brokerShortLabel">EMQX WSS</span>
         <span>•</span>
         <span id="topicShortLabel">esp32-dryer-panel-01</span>
       </div>
 
-      <button id="btnOpenGuide" class="btn-glass primary">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="4" y="4" width="16" height="16" rx="2" />
-          <rect x="9" y="9" width="6" height="6" />
-        </svg>
-        <span>Pinout &amp; Panduan GitHub</span>
+      <!-- Tombol Ganti Tema: Klasik Gelap (Obsidian & Emas) vs Klasik Terang (Ivory & Espresso) -->
+      <button id="btnThemeSwitch" class="btn-classic" title="Ganti nuansa warna Klasik Gelap / Klasik Ivory Terang">
+        <span id="themeIcon">☀️</span>
+        <span id="themeLabel">Nuansa Ivory</span>
+      </button>
+
+      <button id="btnOpenGuide" class="btn-classic gold">
+        <span>Pinout &amp; Panduan</span>
       </button>
     </div>
   </header>
 
-  <main class="wrapper">
-    <!-- MQTT CLOUD & MODE TOOLBAR -->
-    <section class="glass-card mqtt-bar">
-      <div class="toolbar-group">
-        <div class="seg-tabs">
-          <button id="modeBtnMqtt" class="seg-btn active" title="Terhubung jarak jauh via Internet menggunakan Broker MQTT Gratis">MQTT Cloud (Internet)</button>
-          <button id="modeBtnSim" class="seg-btn" title="Uji coba simulasi sensor & fisika pemanas">Simulator + Sync MQTT</button>
-          <button id="modeBtnDirect" class="seg-btn" title="Koneksi WiFi lokal langsung ke IP ESP32">WiFi IP Lokal</button>
+  <main class="container">
+    <!-- BAR KONFIGURASI MQTT & SIMULATOR -->
+    <section class="panel-card console-bar">
+      <div class="console-group">
+        <div class="segmented">
+          <button id="modeBtnMqtt" class="seg-item active">MQTT Cloud (Internet)</button>
+          <button id="modeBtnSim" class="seg-item">Simulator + Sync MQTT</button>
+          <button id="modeBtnDirect" class="seg-item">WiFi IP Lokal</button>
         </div>
-
-        <span id="mqttStatusPill" class="mqtt-pill-indicator connecting">Menghubungkan Broker...</span>
+        <span id="mqttStatusPill" class="broker-tag wait">Menyambungkan...</span>
       </div>
 
-      <!-- Konfigurasi Broker & Topic Unik MQTT -->
-      <div id="mqttConfigGroup" class="toolbar-group">
-        <select id="selectBroker" class="mqtt-select" title="Pilih Server Broker MQTT Gratis">
-          <option value="wss://broker.emqx.io:8084/mqtt" selected>Broker: EMQX Cloud (Gratis)</option>
-          <option value="wss://broker.hivemq.com:8884/mqtt">Broker: HiveMQ Cloud (Gratis)</option>
+      <div id="mqttConfigGroup" class="console-group">
+        <select id="selectBroker" class="select-classic">
+          <option value="wss://broker.emqx.io:8084/mqtt" selected>Broker: EMQX Cloud</option>
+          <option value="wss://broker.hivemq.com:8884/mqtt">Broker: HiveMQ Cloud</option>
         </select>
-        <input type="text" id="inputTopicId" class="mqtt-input" style="width:185px;" value="esp32-dryer-panel-01" title="Samakan ID Topik ini dengan kode di Arduino ESP32 dan di HP Anda" placeholder="ID Topik Unik Alat" />
-        <button id="btnApplyMqtt" class="btn-glass primary">Sambungkan</button>
+        <input type="text" id="inputTopicId" class="input-classic" style="width:185px;" value="esp32-dryer-panel-01" placeholder="ID Topik Alat" />
+        <button id="btnApplyMqtt" class="btn-classic gold">Sambungkan</button>
       </div>
 
-      <!-- Slider Uji Cepat saat mode Simulator dipilih -->
-      <div id="simQuickGroup" class="toolbar-group hidden">
-        <div class="sim-pill">
+      <div id="simQuickGroup" class="console-group hidden">
+        <div class="slider-plaque">
           <span>Suhu: <strong id="simTempLabel">29.4°C</strong></span>
           <input type="range" id="simTempSlider" min="20" max="58" step="0.2" value="29.4" />
         </div>
-        <div class="sim-pill hum">
+        <div class="slider-plaque">
           <span>Lembab: <strong id="simHumLabel">64.2%</strong></span>
           <input type="range" id="simHumSlider" min="20" max="95" step="0.5" value="64.2" />
         </div>
-        <label style="display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--text-sub);cursor:pointer;">
-          <input type="checkbox" id="chkAutoWave" checked style="accent-color:var(--neon-cyan)" />
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;">
+          <input type="checkbox" id="chkAutoWave" checked style="accent-color:var(--brass)" />
           <span>Fisika Otomatis</span>
         </label>
       </div>
 
-      <!-- Input IP Lokal -->
-      <div id="directIpGroup" class="toolbar-group hidden">
-        <input type="text" id="inputEspIp" class="mqtt-input" placeholder="IP ESP32 (192.168.1.105)" value="192.168.1.105" />
-        <button id="btnConnectEsp" class="btn-glass primary">Hubungkan IP</button>
+      <div id="directIpGroup" class="console-group hidden">
+        <input type="text" id="inputEspIp" class="input-classic" placeholder="192.168.1.105" value="192.168.1.105" />
+        <button id="btnConnectEsp" class="btn-classic gold">Hubungkan IP</button>
       </div>
     </section>
 
-    <!-- ROW 1: RADIAL GAUGES + INTERACTIVE HEATING CHAMBER -->
+    <!-- ROW 1: CLASSIC ANALOG CHRONOGRAPH DIALS + THERMAL CHAMBER -->
     <section class="hero-grid">
-      <!-- Gauge 1: Suhu -->
-      <article class="glass-card gauge-card temp-theme">
-        <div class="card-top">
-          <span class="card-tag">Suhu Ruang Pemanas</span>
-          <span id="tempStatusBadge" class="pill-status hot">Memanaskan</span>
+      <!-- Dial 1: Suhu Ruangan (Analog Needle + Digital Readout) -->
+      <article class="panel-card">
+        <div class="card-header-line">
+          <div>
+            <span class="classic-kicker">Instrumen Termal I</span>
+            <h2 class="classic-heading">Temperatur Ruang</h2>
+          </div>
+          <span id="tempStatusBadge" class="tag-pill hot">Memanaskan</span>
         </div>
 
-        <div class="radial-wrap">
-          <svg class="radial-svg" viewBox="0 0 200 160">
-            <defs>
-              <linearGradient id="tempGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#38bdf8" />
-                <stop offset="50%" stop-color="#fb923c" />
-                <stop offset="100%" stop-color="#f43f5e" />
-              </linearGradient>
-            </defs>
-            <path class="radial-bg" d="M 30 135 A 78 78 0 1 1 170 135" />
-            <path id="arcTemp" class="radial-bar" stroke="url(#tempGrad)" d="M 30 135 A 78 78 0 1 1 170 135" stroke-dasharray="330" stroke-dashoffset="165" />
-          </svg>
-          <div class="radial-center">
-            <div id="valTemp" class="big-metric" style="color:#ff8c5a">29.4</div>
-            <div class="metric-unit">DERAJAT °C</div>
+        <div class="analog-dial-wrap">
+          <div class="analog-dial-bezel">
+            <svg class="dial-svg" viewBox="0 0 200 200">
+              <!-- Garis Lingkar Skala Klasik -->
+              <path d="M 38 152 A 80 80 0 1 1 162 152" fill="none" stroke="var(--dial-tick)" stroke-width="2" />
+              <path id="arcTempColor" d="M 38 152 A 80 80 0 1 1 162 152" fill="none" stroke="var(--copper)" stroke-width="5" stroke-linecap="round" stroke-dasharray="350" stroke-dashoffset="200" />
+              <!-- Angka Skala Klasik (15°C s/d 60°C) -->
+              <g font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600" fill="var(--text-secondary)" text-anchor="middle">
+                <text x="48" y="142">15°</text>
+                <text x="38" y="98">25°</text>
+                <text x="68" y="54">35°</text>
+                <text x="132" y="54">45°</text>
+                <text x="162" y="98">55°</text>
+                <text x="150" y="142">60°</text>
+              </g>
+              <!-- Jarum Penunjuk Analog Presisi -->
+              <g id="needleTemp" class="needle-group" transform="rotate(-45)">
+                <line x1="100" y1="112" x2="100" y2="34" stroke="var(--copper)" stroke-width="2.8" stroke-linecap="round" />
+                <polygon points="100,26 96.5,40 103.5,40" fill="var(--copper)" />
+                <circle cx="100" cy="100" r="8" fill="var(--brass)" stroke="var(--bg-surface)" stroke-width="2" />
+              </g>
+            </svg>
+
+            <div class="dial-digital-readout">
+              <div id="valTemp" class="dial-digital-num">29.4</div>
+              <div class="dial-digital-unit">Celcius °C</div>
+            </div>
           </div>
         </div>
 
-        <div class="gauge-footer">
-          <div class="mini-stat">
-            <span>Minimum</span>
+        <div class="plaque-footer">
+          <div class="plaque-col">
+            <span>Terendah</span>
             <strong id="valMinTemp">28.5°C</strong>
           </div>
-          <div class="mini-stat">
-            <span>Target Auto</span>
-            <strong id="lblThresholdTemp" style="color:#fb923c">30° - 38°C</strong>
+          <div class="plaque-col">
+            <span>Rentang Auto</span>
+            <strong id="lblThresholdTemp" style="color:var(--brass)">30° - 38°C</strong>
           </div>
-          <div class="mini-stat">
-            <span>Maksimum</span>
+          <div class="plaque-col">
+            <span>Tertinggi</span>
             <strong id="valMaxTemp">31.0°C</strong>
           </div>
         </div>
       </article>
 
-      <!-- Gauge 2: Kelembaban -->
-      <article class="glass-card gauge-card hum-theme">
-        <div class="card-top">
-          <span class="card-tag">Kelembaban Udara (RH)</span>
-          <span id="humStatusBadge" class="pill-status ok">Optimal</span>
+      <!-- Dial 2: Kelembaban Udara (Hygrometer Analog + Digital) -->
+      <article class="panel-card">
+        <div class="card-header-line">
+          <div>
+            <span class="classic-kicker">Instrumen Higrometer II</span>
+            <h2 class="classic-heading">Kelembaban Udara</h2>
+          </div>
+          <span id="humStatusBadge" class="tag-pill ok">Optimal</span>
         </div>
 
-        <div class="radial-wrap">
-          <svg class="radial-svg" viewBox="0 0 200 160">
-            <defs>
-              <linearGradient id="humGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#10b981" />
-                <stop offset="100%" stop-color="#00e5ff" />
-              </linearGradient>
-            </defs>
-            <path class="radial-bg" d="M 30 135 A 78 78 0 1 1 170 135" />
-            <path id="arcHum" class="radial-bar" stroke="url(#humGrad)" d="M 30 135 A 78 78 0 1 1 170 135" stroke-dasharray="330" stroke-dashoffset="118" />
-          </svg>
-          <div class="radial-center">
-            <div id="valHum" class="big-metric" style="color:#00e5ff">64.2</div>
-            <div class="metric-unit">PERSEN %RH</div>
+        <div class="analog-dial-wrap">
+          <div class="analog-dial-bezel">
+            <svg class="dial-svg" viewBox="0 0 200 200">
+              <path d="M 38 152 A 80 80 0 1 1 162 152" fill="none" stroke="var(--dial-tick)" stroke-width="2" />
+              <path id="arcHumColor" d="M 38 152 A 80 80 0 1 1 162 152" fill="none" stroke="var(--teal)" stroke-width="5" stroke-linecap="round" stroke-dasharray="350" stroke-dashoffset="130" />
+              <g font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600" fill="var(--text-secondary)" text-anchor="middle">
+                <text x="48" y="142">0%</text>
+                <text x="38" y="98">25%</text>
+                <text x="68" y="54">50%</text>
+                <text x="132" y="54">75%</text>
+                <text x="155" y="128">100%</text>
+              </g>
+              <g id="needleHum" class="needle-group" transform="rotate(35)">
+                <line x1="100" y1="112" x2="100" y2="34" stroke="var(--teal)" stroke-width="2.8" stroke-linecap="round" />
+                <polygon points="100,26 96.5,40 103.5,40" fill="var(--teal)" />
+                <circle cx="100" cy="100" r="8" fill="var(--brass)" stroke="var(--bg-surface)" stroke-width="2" />
+              </g>
+            </svg>
+
+            <div class="dial-digital-readout">
+              <div id="valHum" class="dial-digital-num">64.2</div>
+              <div class="dial-digital-unit">Relatif %RH</div>
+            </div>
           </div>
         </div>
 
-        <div class="gauge-footer">
-          <div class="mini-stat">
-            <span>Minimum</span>
+        <div class="plaque-footer">
+          <div class="plaque-col">
+            <span>Terendah</span>
             <strong id="valMinHum">58.0%</strong>
           </div>
-          <div class="mini-stat">
-            <span>Heat Index</span>
-            <strong id="valHeatIndex" style="color:#38bdf8">31.8°C</strong>
+          <div class="plaque-col">
+            <span>Indeks Panas</span>
+            <strong id="valHeatIndex" style="color:var(--teal)">31.8°C</strong>
           </div>
-          <div class="mini-stat">
-            <span>Maksimum</span>
+          <div class="plaque-col">
+            <span>Tertinggi</span>
             <strong id="valMaxHum">68.5%</strong>
           </div>
         </div>
       </article>
 
-      <!-- Card 3: Chamber Visualizer -->
-      <article class="glass-card chamber-card">
-        <div class="card-top">
+      <!-- Panel 3: Jendela Observasi Ruang Pemanas -->
+      <article class="panel-card chamber-panel">
+        <div class="card-header-line">
           <div>
-            <span class="card-tag">Visualisasi Ruang Pemanas Real-Time</span>
-            <h3 style="font-size:0.94rem;font-weight:800;margin-top:2px;">Status Fisik 2 Heater &amp; 1 Kipas</h3>
+            <span class="classic-kicker">Observasi Mekanis III</span>
+            <h2 class="classic-heading">Ruang Pemanas &amp; Sirkulasi</h2>
           </div>
-          <span id="valActiveRelays" class="pill-status ok">3 / 3 Aktif</span>
+          <span id="valActiveRelays" class="tag-pill ok">3 / 3 Aktif</span>
         </div>
 
-        <div id="chamberStage" class="chamber-stage">
-          <div class="chamber-fan-box">
-            <div id="visualFanWheel" class="fan-wheel spinning">
-              <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path d="M12 12c0-3 2.5-5.5 5.5-5.5S23 9 23 12H12z" />
-                <path d="M12 12c3 0 5.5 2.5 5.5 5.5S15 23 12 23V12z" />
-                <path d="M12 12c0 3-2.5 5.5-5.5 5.5S1 15 1 12h11z" />
-                <path d="M12 12c-3 0-5.5-2.5-5.5-2.5S9 1 12 1v11z" />
-              </svg>
-            </div>
-            <div>
-              <div style="font-size:0.77rem;font-weight:800;">Kipas Blower Sirkulasi</div>
-              <div id="visualFanText" style="font-size:0.71rem;color:var(--neon-cyan);font-weight:700;">MENYALA (Sirkulasi Aktif)</div>
-            </div>
-          </div>
-
-          <div style="text-align:center;">
-            <span id="chamberStatusBanner" class="chamber-temp-badge">
-              🔥 Ruang Sedang Dipanaskan menuju 38.0°C
-            </span>
-          </div>
-
-          <div class="chamber-heaters-row">
-            <div id="visualHeater1" class="heater-coil-unit glowing">
-              <div>
-                <div class="coil-label">HEATER 1</div>
-                <div id="visualH1Text" class="coil-state">ON • GPIO 26</div>
-              </div>
-              <div class="coil-bars">
-                <span class="coil-bar"></span><span class="coil-bar"></span><span class="coil-bar"></span>
-              </div>
-            </div>
-
-            <div id="visualHeater2" class="heater-coil-unit glowing">
-              <div>
-                <div class="coil-label">HEATER 2</div>
-                <div id="visualH2Text" class="coil-state">ON • GPIO 27</div>
-              </div>
-              <div class="coil-bars">
-                <span class="coil-bar"></span><span class="coil-bar"></span><span class="coil-bar"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="gauge-footer">
-          <div class="mini-stat">
-            <span>Mode Sistem</span>
-            <strong id="valModeSummary" style="color:var(--neon-cyan)">AUTO</strong>
-          </div>
-          <div class="mini-stat">
-            <span>Sumber Data</span>
-            <strong id="valDataSource">SIM + MQTT</strong>
-          </div>
-          <div class="mini-stat">
-            <span>Update</span>
-            <strong id="valLastUpdate">Baru saja</strong>
-          </div>
-        </div>
-      </article>
-    </section>
-
-    <!-- ROW 2: REAL-TIME CHART + RELAY CONTROL CENTER -->
-    <section class="main-grid">
-      <div class="glass-card">
-        <div class="section-head">
-          <div>
-            <h2>Grafik Real-Time Suhu &amp; Kelembaban</h2>
-            <p>Kurva telemetri langsung dengan garis batas Cut-Off Heater otomatis</p>
-          </div>
-          <div class="chart-toolbar">
-            <div class="seg-tabs">
-              <button class="seg-btn active" data-series="both">Semua</button>
-              <button class="seg-btn" data-series="temp">Suhu</button>
-              <button class="seg-btn" data-series="hum">Lembab</button>
-            </div>
-            <button id="btnPauseChart" class="btn-glass">Jeda</button>
-            <button id="btnResetChart" class="btn-glass">Reset</button>
-            <button id="btnExportCsv" class="btn-glass primary">Unduh CSV</button>
-          </div>
-        </div>
-
-        <div class="chart-legend-row">
-          <span class="legend-chip">
-            <span class="dot-indicator" style="background:#ff6b2b;box-shadow:0 0 8px #ff6b2b"></span>
-            Suhu Ruangan (°C)
-          </span>
-          <span class="legend-chip">
-            <span class="dot-indicator" style="background:#00e5ff;box-shadow:0 0 8px #00e5ff"></span>
-            Kelembaban (%RH)
-          </span>
-          <span class="legend-chip">
-            <span style="width:18px;border-top:2px dashed #f43f5e;display:inline-block"></span>
-            Batas Cut-Off Heater (<strong id="legendTempMax">38.0</strong>°C)
-          </span>
-        </div>
-
-        <div class="canvas-container">
-          <canvas id="telemetryChart" width="800" height="330"></canvas>
-          <div id="chartTooltip" class="chart-tooltip hidden"></div>
-        </div>
-      </div>
-
-      <!-- Right: 2 Heater + 1 Kipas Control Panel -->
-      <div class="glass-card">
-        <div class="section-head">
-          <div>
-            <h2>Panel Kontrol 2 Heater &amp; 1 Kipas</h2>
-            <p>Sinkron otomatis antara HP, Laptop, dan ESP32 via MQTT</p>
-          </div>
-          <div class="mode-switcher-pill">
-            <button id="btnModeAuto" class="mode-pill-btn active">AUTO</button>
-            <button id="btnModeManual" class="mode-pill-btn">MANUAL</button>
-          </div>
-        </div>
-
-        <div id="modeBanner" class="mode-info-strip">
-          <span id="modeBannerText">
-            ⚡ <strong>Mode AUTO Aktif:</strong> Heater 1, Heater 2, dan Kipas diatur otomatis oleh sensor.
-          </span>
-          <div style="display:flex;gap:6px;">
-            <button id="btnAllOn" class="btn-glass" style="padding:5px 10px;font-size:0.72rem;">ON Semua</button>
-            <button id="btnAllOff" class="btn-glass" style="padding:5px 10px;font-size:0.72rem;">OFF Semua</button>
-          </div>
-        </div>
-
-        <div class="actuator-list">
-          <!-- Heater 1 -->
-          <div id="cardRelayHeater1" class="actuator-card heater-type is-on">
-            <div class="act-left">
-              <div class="act-icon">
-                <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-                </svg>
-              </div>
-              <div>
-                <div class="act-title">Heater 1 (Pemanas Utama)</div>
-                <div class="act-sub">Pin <code>GPIO 26</code> • Auto ON &le; <span id="metaH1Low">30.0</span>°C | Cut-Off &ge; <span id="metaH1High">38.0</span>°C</div>
-              </div>
-            </div>
-            <div class="act-right">
-              <span id="stateTextHeater1" class="power-pill">ON</span>
-              <label class="neo-switch" onclick="event.stopPropagation()">
-                <input type="checkbox" id="toggleHeater1" data-relay="heater1" checked />
-                <span class="neo-slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Heater 2 -->
-          <div id="cardRelayHeater2" class="actuator-card heater-type is-on">
-            <div class="act-left">
-              <div class="act-icon">
-                <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-                </svg>
-              </div>
-              <div>
-                <div class="act-title">Heater 2 (Pemanas Pendamping)</div>
-                <div class="act-sub">Pin <code>GPIO 27</code> • Auto ON &le; <span id="metaH2Low">30.0</span>°C | Cut-Off &ge; <span id="metaH2High">38.0</span>°C</div>
-              </div>
-            </div>
-            <div class="act-right">
-              <span id="stateTextHeater2" class="power-pill">ON</span>
-              <label class="neo-switch" onclick="event.stopPropagation()">
-                <input type="checkbox" id="toggleHeater2" data-relay="heater2" checked />
-                <span class="neo-slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Kipas -->
-          <div id="cardRelayFan" class="actuator-card fan-type is-on">
-            <div class="act-left">
-              <div class="act-icon">
-                <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.2">
+        <div id="chamberStage" class="chamber-window">
+          <div class="turbine-row">
+            <div class="turbine-unit">
+              <div id="visualFanWheel" class="brass-rotor spinning">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 12c0-3 2.5-5.5 5.5-5.5S23 9 23 12H12z" />
                   <path d="M12 12c3 0 5.5 2.5 5.5 5.5S15 23 12 23V12z" />
                   <path d="M12 12c0 3-2.5 5.5-5.5 5.5S1 15 1 12h11z" />
@@ -1284,55 +1306,229 @@
                 </svg>
               </div>
               <div>
-                <div class="act-title">Kipas Sirkulasi / Blower</div>
-                <div class="act-sub">Pin <code>GPIO 14</code> • Auto: Menyala bersama Heater</div>
+                <div style="font-size:0.82rem;font-weight:700;">Kipas Sirkulasi Udara</div>
+                <div id="visualFanText" style="font-size:0.72rem;color:var(--brass);font-weight:600;">Berputar Aktif • GPIO 14</div>
               </div>
             </div>
-            <div class="act-right">
-              <span id="stateTextFan" class="power-pill">ON</span>
-              <label class="neo-switch" onclick="event.stopPropagation()">
+            <span id="valModeSummary" class="tag-pill">MODE AUTO</span>
+          </div>
+
+          <div id="chamberStatusBanner" class="window-readout-pill">
+            Pemanasan Aktif • Menuju Batas 38.0°C
+          </div>
+
+          <div class="filament-grid">
+            <div id="visualHeater1" class="filament-box active">
+              <div>
+                <div style="font-size:0.78rem;font-weight:700;">HEATER I</div>
+                <div id="visualH1Text" style="font-family:'JetBrains Mono',monospace;font-size:0.69rem;color:var(--text-secondary);">ON • GPIO 26</div>
+              </div>
+              <div class="filament-wires">
+                <span class="wire"></span><span class="wire"></span><span class="wire"></span><span class="wire"></span>
+              </div>
+            </div>
+
+            <div id="visualHeater2" class="filament-box active">
+              <div>
+                <div style="font-size:0.78rem;font-weight:700;">HEATER II</div>
+                <div id="visualH2Text" style="font-family:'JetBrains Mono',monospace;font-size:0.69rem;color:var(--text-secondary);">ON • GPIO 27</div>
+              </div>
+              <div class="filament-wires">
+                <span class="wire"></span><span class="wire"></span><span class="wire"></span><span class="wire"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="plaque-footer">
+          <div class="plaque-col">
+            <span>Jalur Data</span>
+            <strong id="valDataSource">SIM + MQTT</strong>
+          </div>
+          <div class="plaque-col">
+            <span>Titik Embun</span>
+            <strong id="valDewPoint">21.9°C</strong>
+          </div>
+          <div class="plaque-col">
+            <span>Pembaruan</span>
+            <strong id="valLastUpdate">Baru saja</strong>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ROW 2: TELEMETRY GRAPH + TACTILE SWITCHBOARD -->
+    <section class="main-grid">
+      <!-- Grafik Presisi -->
+      <div class="panel-card">
+        <div class="card-header-line" style="flex-wrap:wrap;gap:12px;">
+          <div>
+            <span class="classic-kicker">Rekaman Historis</span>
+            <h2 class="classic-heading">Kurva Temperatur &amp; Kelembaban</h2>
+          </div>
+          <div class="console-group">
+            <div class="segmented">
+              <button class="seg-item active" data-series="both">Semua</button>
+              <button class="seg-item" data-series="temp">Suhu</button>
+              <button class="seg-item" data-series="hum">Lembab</button>
+            </div>
+            <button id="btnPauseChart" class="btn-classic">Jeda</button>
+            <button id="btnResetChart" class="btn-classic">Reset</button>
+            <button id="btnExportCsv" class="btn-classic gold">Ekspor CSV</button>
+          </div>
+        </div>
+
+        <div class="chart-legend">
+          <span class="legend-item">
+            <span class="swatch" style="background:var(--copper)"></span>
+            Temperatur (°C)
+          </span>
+          <span class="legend-item">
+            <span class="swatch" style="background:var(--teal)"></span>
+            Kelembaban (%RH)
+          </span>
+          <span class="legend-item">
+            <span style="width:16px;border-top:2px dashed var(--crimson);display:inline-block"></span>
+            Ambang Cut-Off Heater (<strong id="legendTempMax">38.0</strong>°C)
+          </span>
+        </div>
+
+        <div class="chart-frame">
+          <canvas id="telemetryChart" width="800" height="330"></canvas>
+          <div id="chartTooltip" class="chart-tooltip hidden"></div>
+        </div>
+      </div>
+
+      <!-- Saklar Mekanis-Modern 2 Heater + 1 Kipas -->
+      <div class="panel-card">
+        <div class="card-header-line">
+          <div>
+            <span class="classic-kicker">Panel Saklar Utama</span>
+            <h2 class="classic-heading">Kendali 2 Heater &amp; 1 Kipas</h2>
+          </div>
+          <div class="segmented">
+            <button id="btnModeAuto" class="seg-item active">AUTO</button>
+            <button id="btnModeManual" class="seg-item">MANUAL</button>
+          </div>
+        </div>
+
+        <div class="mode-banner-classic">
+          <span id="modeBannerText">
+            <strong>Mode Otomatis (AUTO):</strong> Heater I, Heater II, dan Kipas bekerja mengikuti ambang termostat.
+          </span>
+          <div style="display:flex;gap:6px;">
+            <button id="btnAllOn" class="btn-classic" style="padding:4px 10px;font-size:0.72rem;">Nyalakan Semua</button>
+            <button id="btnAllOff" class="btn-classic" style="padding:4px 10px;font-size:0.72rem;">Matikan Semua</button>
+          </div>
+        </div>
+
+        <div class="switchboard-list">
+          <!-- Heater 1 -->
+          <div id="cardRelayHeater1" class="switch-unit heater-kind is-on">
+            <div class="unit-left">
+              <div class="pilot-bezel">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <div class="unit-name">Heater I — Pemanas Utama</div>
+                <div class="unit-meta">Pin <code>GPIO 26</code> • Nyala &le; <span id="metaH1Low">30.0</span>°C | Cut-Off &ge; <span id="metaH1High">38.0</span>°C</div>
+              </div>
+            </div>
+            <div class="unit-right">
+              <span id="stateTextHeater1" class="status-stamp">ON</span>
+              <label class="brass-toggle" onclick="event.stopPropagation()">
+                <input type="checkbox" id="toggleHeater1" data-relay="heater1" checked />
+                <span class="brass-track"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Heater 2 -->
+          <div id="cardRelayHeater2" class="switch-unit heater-kind is-on">
+            <div class="unit-left">
+              <div class="pilot-bezel">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <div class="unit-name">Heater II — Pemanas Pendamping</div>
+                <div class="unit-meta">Pin <code>GPIO 27</code> • Nyala &le; <span id="metaH2Low">30.0</span>°C | Cut-Off &ge; <span id="metaH2High">38.0</span>°C</div>
+              </div>
+            </div>
+            <div class="unit-right">
+              <span id="stateTextHeater2" class="status-stamp">ON</span>
+              <label class="brass-toggle" onclick="event.stopPropagation()">
+                <input type="checkbox" id="toggleHeater2" data-relay="heater2" checked />
+                <span class="brass-track"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Kipas -->
+          <div id="cardRelayFan" class="switch-unit fan-kind is-on">
+            <div class="unit-left">
+              <div class="pilot-bezel">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 12c0-3 2.5-5.5 5.5-5.5S23 9 23 12H12z" />
+                  <path d="M12 12c3 0 5.5 2.5 5.5 5.5S15 23 12 23V12z" />
+                  <path d="M12 12c0 3-2.5 5.5-5.5 5.5S1 15 1 12h11z" />
+                  <path d="M12 12c-3 0-5.5-2.5-5.5-2.5S9 1 12 1v11z" />
+                </svg>
+              </div>
+              <div>
+                <div class="unit-name">Kipas Sirkulasi / Blower</div>
+                <div class="unit-meta">Pin <code>GPIO 14</code> • Mengikuti aturan kerja termostat</div>
+              </div>
+            </div>
+            <div class="unit-right">
+              <span id="stateTextFan" class="status-stamp">ON</span>
+              <label class="brass-toggle" onclick="event.stopPropagation()">
                 <input type="checkbox" id="toggleFan" data-relay="fan" checked />
-                <span class="neo-slider"></span>
+                <span class="brass-track"></span>
               </label>
             </div>
           </div>
         </div>
 
-        <div class="thermostat-panel">
-          <div class="thermostat-head">
-            <h4>Konfigurasi Termostat Mode AUTO</h4>
-            <button id="btnSaveThresholds" class="btn-glass primary" style="padding:5px 12px;font-size:0.74rem;">Simpan &amp; Kirim ke MQTT</button>
+        <!-- Kalibrasi Termostat -->
+        <div class="calibration-box">
+          <div class="cal-header">
+            <span class="cal-title">Kalibrasi Termostat Otomatis</span>
+            <button id="btnSaveThresholds" class="btn-classic gold" style="padding:5px 12px;font-size:0.73rem;">Simpan Kalibrasi</button>
           </div>
-          <div class="thermostat-grid">
-            <div class="field-box">
-              <label>Suhu Nyala (Heater 1 &amp; 2 ON &le;)</label>
-              <div class="field-input">
+          <div class="cal-grid">
+            <div class="cal-field">
+              <label>Batas Bawah (Heater ON &le;)</label>
+              <div class="cal-input-wrap">
                 <input type="number" id="inputTempLow" step="0.5" value="30.0" />
-                <span style="font-size:0.75rem;color:var(--text-dim)">°C</span>
+                <span style="font-size:0.72rem;color:var(--text-muted)">°C</span>
               </div>
             </div>
-            <div class="field-box">
-              <label>Suhu Cut-Off (Heater 1 &amp; 2 OFF &ge;)</label>
-              <div class="field-input">
+            <div class="cal-field">
+              <label>Batas Cut-Off (Heater OFF &ge;)</label>
+              <div class="cal-input-wrap">
                 <input type="number" id="inputTempHigh" step="0.5" value="38.0" />
-                <span style="font-size:0.75rem;color:var(--text-dim)">°C</span>
+                <span style="font-size:0.72rem;color:var(--text-muted)">°C</span>
               </div>
             </div>
-            <div class="field-box">
-              <label>Mode Kerja Kipas Saat AUTO</label>
-              <div class="field-input">
+            <div class="cal-field">
+              <label>Aturan Kipas Saat AUTO</label>
+              <div class="cal-input-wrap">
                 <select id="selectFanRule">
-                  <option value="with_heater" selected>Menyala Bersama Heater (Sirkulasi)</option>
+                  <option value="with_heater" selected>Menyala Bersama Heater</option>
                   <option value="overheat_hum">ON Saat Cut-Off / Lembab Tinggi</option>
                   <option value="always_on">Selalu Menyala Saat Auto</option>
                 </select>
               </div>
             </div>
-            <div class="field-box">
-              <label>Batas Kelembaban Tinggi (&ge;)</label>
-              <div class="field-input">
+            <div class="cal-field">
+              <label>Batas Lembab Tinggi (&ge;)</label>
+              <div class="cal-input-wrap">
                 <input type="number" id="inputHumHigh" step="1" value="70.0" />
-                <span style="font-size:0.75rem;color:var(--text-dim)">%RH</span>
+                <span style="font-size:0.72rem;color:var(--text-muted)">%RH</span>
               </div>
             </div>
           </div>
@@ -1340,35 +1536,35 @@
       </div>
     </section>
 
-    <!-- ROW 3: LOG FEED & TELEMETRY TABLE -->
+    <!-- ROW 3: JURNAL AKTIVITAS & BUKU BESAR TELEMETRI -->
     <section class="bottom-grid">
-      <div class="glass-card">
-        <div class="section-head">
+      <div class="panel-card">
+        <div class="card-header-line">
           <div>
-            <h2>Log Komunikasi MQTT &amp; Aktuator</h2>
-            <p>Catatan perintah jarak jauh antara HP, Laptop, dan ESP32</p>
+            <span class="classic-kicker">Catatan Sistem</span>
+            <h2 class="classic-heading">Jurnal Komunikasi &amp; Aktuator</h2>
           </div>
-          <button id="btnClearLogs" class="btn-glass" style="padding:5px 11px;font-size:0.74rem;">Bersihkan</button>
+          <button id="btnClearLogs" class="btn-classic" style="padding:5px 11px;font-size:0.73rem;">Bersihkan</button>
         </div>
-        <div id="logList" class="log-feed"></div>
+        <div id="logList" class="journal-list"></div>
       </div>
 
-      <div class="glass-card">
-        <div class="section-head">
+      <div class="panel-card">
+        <div class="card-header-line">
           <div>
-            <h2>Tabel Riwayat Telemetri Sensor</h2>
-            <p>10 data pembacaan terakhir yang diterima</p>
+            <span class="classic-kicker">Arsip Pengukuran</span>
+            <h2 class="classic-heading">Tabel Riwayat Telemetri</h2>
           </div>
         </div>
-        <div class="table-wrap">
-          <table class="modern-table">
+        <div class="ledger-wrap">
+          <table class="ledger-table">
             <thead>
               <tr>
                 <th>Waktu</th>
-                <th>Suhu</th>
+                <th>Temperatur</th>
                 <th>Kelembaban</th>
-                <th>Heater 1</th>
-                <th>Heater 2</th>
+                <th>Heater I</th>
+                <th>Heater II</th>
                 <th>Kipas</th>
                 <th>Sumber</th>
               </tr>
@@ -1380,25 +1576,25 @@
     </section>
   </main>
 
-  <!-- MODAL PANDUAN GITHUB PAGES + PINOUT ESP32 -->
-  <div id="guideModal" class="modal-overlay hidden">
-    <div class="glass-card modal-box">
-      <div class="section-head" style="border-bottom:1px solid var(--border-glass);padding-bottom:12px;">
+  <!-- MODAL PINOUT & PANDUAN UPDATE GITHUB -->
+  <div id="guideModal" class="modal-backdrop hidden">
+    <div class="panel-card modal-sheet">
+      <div class="card-header-line" style="border-bottom:1px solid var(--border-frame);padding-bottom:12px;">
         <div>
-          <h2>Panduan GitHub Pages + MQTT Cloud + Pinout ESP32</h2>
-          <p>Cara meng-online-kan ke GitHub Pages secara gratis &amp; menghubungkan ESP32</p>
+          <span class="classic-kicker">Dokumentasi Teknis</span>
+          <h2 class="classic-heading">Skema Pinout ESP32 &amp; Cara Update Tampilan di GitHub</h2>
         </div>
-        <button id="btnCloseGuide" class="btn-glass">&times; Tutup</button>
+        <button id="btnCloseGuide" class="btn-classic">&times; Tutup</button>
       </div>
 
-      <div class="table-wrap" style="margin-bottom:18px;">
-        <table class="modern-table">
+      <div class="ledger-wrap" style="margin:14px 0 18px;">
+        <table class="ledger-table">
           <thead>
             <tr>
-              <th>Perangkat / Komponen</th>
+              <th>Perangkat</th>
               <th>Pin Modul</th>
-              <th>Pin GPIO ESP32</th>
-              <th>Fungsi Utama</th>
+              <th>Pin ESP32</th>
+              <th>Keterangan</th>
             </tr>
           </thead>
           <tbody>
@@ -1406,19 +1602,19 @@
               <td><strong>Sensor DHT22 / DHT11</strong></td>
               <td>VCC / DATA / GND</td>
               <td><code>3V3</code> / <code>GPIO 4</code> / <code>GND</code></td>
-              <td>Membaca Suhu (°C) &amp; Kelembaban (%RH)</td>
+              <td>Pembaca Temperatur &amp; Kelembaban</td>
             </tr>
             <tr>
-              <td><strong>Relay 1 — Heater 1</strong></td>
+              <td><strong>Relay 1 — Heater I</strong></td>
               <td>IN1</td>
               <td><code>GPIO 26</code></td>
-              <td>Elemen Pemanas 1 (Utama)</td>
+              <td>Elemen Pemanas Utama</td>
             </tr>
             <tr>
-              <td><strong>Relay 2 — Heater 2</strong></td>
+              <td><strong>Relay 2 — Heater II</strong></td>
               <td>IN2</td>
               <td><code>GPIO 27</code></td>
-              <td>Elemen Pemanas 2 (Pendamping)</td>
+              <td>Elemen Pemanas Pendamping</td>
             </tr>
             <tr>
               <td><strong>Relay 3 — Kipas</strong></td>
@@ -1430,27 +1626,26 @@
         </table>
       </div>
 
-      <div style="font-size:0.82rem;color:var(--text-sub);line-height:1.65;">
-        <h4 style="color:#fff;margin-bottom:6px;">Cara Upload Gratis ke GitHub Pages (Dapat Link https://username.github.io/...):</h4>
-        <ol style="padding-left:18px;display:flex;flex-direction:column;gap:6px;">
-          <li>Buka <strong>github.com</strong> (login / daftar gratis), lalu klik tombol <strong>New Repository</strong> (beri nama misal <code>monitoring-esp32</code>, pilih <strong>Public</strong>, klik <em>Create repository</em>).</li>
-          <li>Klik tulisan <strong>"uploading an existing file"</strong>, lalu tarik file <code>index.html</code> ini ke dalamnya dan klik <strong>Commit changes</strong>.</li>
-          <li>Buka menu <strong>Settings</strong> &rarr; <strong>Pages</strong> (di menu kiri) &rarr; pada bagian <em>Branch</em> pilih <strong>main</strong> lalu klik <strong>Save</strong>.</li>
-          <li>Tunggu ~30 detik, link resmi <code>https://username.github.io/monitoring-esp32/</code> siap dibuka di <strong>HP maupun Laptop dari mana saja</strong>!</li>
-        </ol>
+      <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.65;">
+        <strong style="color:var(--text-primary);">Cara Memperbarui Tampilan di Link GitHub Pages Anda:</strong>
+        <p style="margin-top:4px;">Buka repositori <code>github.com/ahmadripai10/monitoring-esp32</code> &rarr; klik tombol <strong>Add file &rarr; Upload files</strong> &rarr; tarik file <code>index.html</code> terbaru ini untuk menimpa yang lama &rarr; klik <strong>Commit changes</strong>. Tunggu 30 detik, link website Anda langsung berganti ke tampilan Klasik-Modern ini!</p>
       </div>
     </div>
   </div>
 
-  <!-- ENGINE JAVASCRIPT + MQTT OVER WEBSOCKETS -->
+  <!-- ENGINE JAVASCRIPT + ANALOG NEEDLE + MQTT CLOUD -->
   <script>
     (function () {
-      const clientId = 'web-esp32-' + Math.random().toString(16).slice(2, 8);
+      const clientId = 'studio-esp32-' + Math.random().toString(16).slice(2, 8);
       let mqttClient = null;
       let lastHardwareMsgAt = 0;
 
+      // Inisialisasi Tema Klasik Gelap / Klasik Ivory Terang
+      const savedTheme = localStorage.getItem('esp32_classic_theme') || 'dark-classic';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+
       const appState = {
-        sourceMode: 'mqtt', // 'mqtt' | 'sim' | 'direct'
+        sourceMode: 'mqtt',
         brokerUrl: localStorage.getItem('esp32_mqtt_broker') || 'wss://broker.emqx.io:8084/mqtt',
         topicId: localStorage.getItem('esp32_mqtt_topic') || 'esp32-dryer-panel-01',
         espIp: localStorage.getItem('esp32_ip') || '192.168.1.105',
@@ -1490,6 +1685,10 @@
 
       const $ = (id) => document.getElementById(id);
       const el = {
+        btnThemeSwitch: $('btnThemeSwitch'),
+        themeIcon: $('themeIcon'),
+        themeLabel: $('themeLabel'),
+
         connectionBadge: $('connectionBadge'),
         connectionText: $('connectionText'),
         brokerShortLabel: $('brokerShortLabel'),
@@ -1520,17 +1719,20 @@
         btnConnectEsp: $('btnConnectEsp'),
 
         valTemp: $('valTemp'),
-        arcTemp: $('arcTemp'),
+        arcTempColor: $('arcTempColor'),
+        needleTemp: $('needleTemp'),
         valMinTemp: $('valMinTemp'),
         valMaxTemp: $('valMaxTemp'),
         lblThresholdTemp: $('lblThresholdTemp'),
         tempStatusBadge: $('tempStatusBadge'),
 
         valHum: $('valHum'),
-        arcHum: $('arcHum'),
+        arcHumColor: $('arcHumColor'),
+        needleHum: $('needleHum'),
         valMinHum: $('valMinHum'),
         valMaxHum: $('valMaxHum'),
         valHeatIndex: $('valHeatIndex'),
+        humStatusBadge: $('humStatusBadge'),
 
         chamberStage: $('chamberStage'),
         visualFanWheel: $('visualFanWheel'),
@@ -1543,6 +1745,7 @@
         valActiveRelays: $('valActiveRelays'),
         valModeSummary: $('valModeSummary'),
         valDataSource: $('valDataSource'),
+        valDewPoint: $('valDewPoint'),
         valLastUpdate: $('valLastUpdate'),
 
         canvas: $('telemetryChart'),
@@ -1554,7 +1757,6 @@
 
         btnModeAuto: $('btnModeAuto'),
         btnModeManual: $('btnModeManual'),
-        modeBanner: $('modeBanner'),
         modeBannerText: $('modeBannerText'),
         btnAllOn: $('btnAllOn'),
         btnAllOff: $('btnAllOff'),
@@ -1584,6 +1786,27 @@
         btnClearLogs: $('btnClearLogs'),
         telemetryTableBody: $('telemetryTableBody'),
       };
+
+      function syncThemeButton() {
+        const current = document.documentElement.getAttribute('data-theme');
+        if (current === 'ivory-classic') {
+          el.themeIcon.textContent = '🌙';
+          el.themeLabel.textContent = 'Nuansa Obsidian';
+        } else {
+          el.themeIcon.textContent = '☀️';
+          el.themeLabel.textContent = 'Nuansa Ivory';
+        }
+      }
+      syncThemeButton();
+
+      el.btnThemeSwitch.addEventListener('click', () => {
+        const cur = document.documentElement.getAttribute('data-theme');
+        const next = cur === 'dark-classic' ? 'ivory-classic' : 'dark-classic';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('esp32_classic_theme', next);
+        syncThemeButton();
+        drawChart();
+      });
 
       function calcDerived(tempC, hum) {
         const a = 17.27, b = 237.7;
@@ -1677,14 +1900,13 @@
       }
 
       // =====================================================================
-      // KONEKSI MQTT CLOUD REAL-TIME (EMQX / HIVEMQ OVER SECURE WEBSOCKET)
+      // MQTT CLOUD CONNECTION
       // =====================================================================
       function connectMqttBroker() {
         if (typeof window.mqtt === 'undefined') {
-          el.mqttStatusPill.textContent = 'Mode Offline (Tanpa Internet)';
+          el.mqttStatusPill.textContent = 'Mode Lokal';
           return;
         }
-
         if (mqttClient) {
           try { mqttClient.end(true); } catch {}
         }
@@ -1693,8 +1915,8 @@
         const topicTelemetry = `${appState.topicId}/telemetry`;
         const topicControl = `${appState.topicId}/control`;
 
-        el.mqttStatusPill.textContent = 'Menyambungkan MQTT...';
-        el.mqttStatusPill.className = 'mqtt-pill-indicator connecting';
+        el.mqttStatusPill.textContent = 'Menyambungkan...';
+        el.mqttStatusPill.className = 'broker-tag wait';
         el.brokerShortLabel.textContent = url.includes('hivemq') ? 'HiveMQ WSS' : 'EMQX WSS';
         el.topicShortLabel.textContent = appState.topicId;
 
@@ -1708,34 +1930,22 @@
         mqttClient.on('connect', () => {
           appState.mqttConnected = true;
           el.mqttStatusPill.textContent = 'Broker Terhubung ✓';
-          el.mqttStatusPill.className = 'mqtt-pill-indicator';
+          el.mqttStatusPill.className = 'broker-tag';
           mqttClient.subscribe([topicTelemetry, topicControl]);
-          addLog('mqtt', `Terhubung ke Broker Cloud (${el.brokerShortLabel.textContent}) pada topik "${appState.topicId}".`);
+          addLog('mqtt', `Tersambung ke ${el.brokerShortLabel.textContent} pada topik "${appState.topicId}".`);
           renderAll();
         });
 
         mqttClient.on('message', (topic, messageBuf) => {
           try {
             const data = JSON.parse(messageBuf.toString());
-
-            // 1. Pesan Telemetri dari ESP32 (atau dari perangkat lain yang membuka Simulator)
             if (topic === topicTelemetry && data.sender !== clientId) {
-              if (data.fromHardware) {
-                lastHardwareMsgAt = Date.now();
-              }
-              if (data.relays) {
-                appState.control.relays = { ...appState.control.relays, ...data.relays };
-              }
-              if (data.mode) {
-                appState.control.mode = data.mode;
-              }
-              if (data.thresholds) {
-                appState.control.thresholds = { ...appState.control.thresholds, ...data.thresholds };
-              }
+              if (data.fromHardware) lastHardwareMsgAt = Date.now();
+              if (data.relays) appState.control.relays = { ...appState.control.relays, ...data.relays };
+              if (data.mode) appState.control.mode = data.mode;
+              if (data.thresholds) appState.control.thresholds = { ...appState.control.thresholds, ...data.thresholds };
               pushTelemetry(data.temperature, data.humidity, data.fromHardware ? 'ESP32-MQTT' : 'SYNC-MQTT');
             }
-
-            // 2. Pesan Kontrol dari HP / Laptop lain -> Sinkronkan Saklar Secara Instan!
             if (topic === topicControl && data.sender !== clientId) {
               if (data.mode) appState.control.mode = data.mode;
               if (data.relays) appState.control.relays = { ...appState.control.relays, ...data.relays };
@@ -1746,7 +1956,7 @@
                 el.inputHumHigh.value = appState.control.thresholds.humHigh;
                 el.selectFanRule.value = appState.control.thresholds.fanRule;
               }
-              addLog('mqtt', `[SYNC JARAK JAUH] Perintah kontrol diterima dari perangkat lain via MQTT.`);
+              addLog('mqtt', 'Perintah saklar jarak jauh disinkronkan via MQTT.');
               renderAll();
             }
           } catch {}
@@ -1754,30 +1964,27 @@
 
         mqttClient.on('offline', () => {
           appState.mqttConnected = false;
-          el.mqttStatusPill.textContent = 'MQTT Terputus...';
-          el.mqttStatusPill.className = 'mqtt-pill-indicator connecting';
+          el.mqttStatusPill.textContent = 'Terputus...';
+          el.mqttStatusPill.className = 'broker-tag wait';
           renderAll();
         });
       }
 
       function publishMqttControl() {
         if (!mqttClient || !appState.mqttConnected) return;
-        const payload = {
+        mqttClient.publish(`${appState.topicId}/control`, JSON.stringify({
           mode: appState.control.mode,
           relays: appState.control.relays,
           thresholds: appState.control.thresholds,
           sender: clientId,
           ts: Date.now(),
-        };
-        mqttClient.publish(`${appState.topicId}/control`, JSON.stringify(payload), { qos: 0, retain: true });
+        }), { qos: 0, retain: true });
       }
 
       function publishMqttSimTelemetry() {
-        // Hanya kirim simulasi ke MQTT jika belum ada ESP32 fisik yang aktif mengirim dalam 8 detik terakhir
         if (!mqttClient || !appState.mqttConnected) return;
         if (Date.now() - lastHardwareMsgAt < 8000) return;
-
-        const payload = {
+        mqttClient.publish(`${appState.topicId}/telemetry`, JSON.stringify({
           fromHardware: false,
           sender: clientId,
           temperature: appState.telemetry.temperature,
@@ -1786,32 +1993,34 @@
           relays: appState.control.relays,
           thresholds: appState.control.thresholds,
           ts: Date.now(),
-        };
-        mqttClient.publish(`${appState.topicId}/telemetry`, JSON.stringify(payload), { qos: 0, retain: true });
+        }), { qos: 0, retain: true });
       }
 
       // =====================================================================
-      // RENDER UI & CHART
+      // RENDER ANALOG DIALS, CHAMBER & SWITCHBOARD
       // =====================================================================
       function renderAll() {
         const { telemetry, control } = appState;
-        const espHardwareActive = Date.now() - lastHardwareMsgAt < 10000;
+        const espOnline = Date.now() - lastHardwareMsgAt < 10000;
 
-        if (espHardwareActive) {
-          el.connectionBadge.className = 'status-badge online';
+        if (espOnline) {
+          el.connectionBadge.className = 'jewel-badge';
           el.connectionText.textContent = 'ESP32 ONLINE (MQTT)';
         } else if (appState.mqttConnected) {
-          el.connectionBadge.className = 'status-badge sim';
-          el.connectionText.textContent = 'CLOUD SIAP (SIMULASI AKTIF)';
+          el.connectionBadge.className = 'jewel-badge sim';
+          el.connectionText.textContent = 'CLOUD SIAP • SIMULASI';
         } else {
-          el.connectionBadge.className = 'status-badge offline';
+          el.connectionBadge.className = 'jewel-badge offline';
           el.connectionText.textContent = 'MODE LOKAL';
         }
 
-        // Radial Gauge Suhu
+        // 1. Dial Analog Suhu (15°C -> -130 deg, 60°C -> +130 deg)
         el.valTemp.textContent = telemetry.temperature.toFixed(1);
-        const tempRatio = Math.max(0, Math.min(1, (telemetry.temperature - 15) / 45));
-        el.arcTemp.style.strokeDashoffset = String(330 - tempRatio * 330);
+        const tempNorm = Math.max(0, Math.min(1, (telemetry.temperature - 15) / 45));
+        const tempAngle = -130 + tempNorm * 260;
+        el.needleTemp.setAttribute('transform', `rotate(${tempAngle.toFixed(1)})`);
+        el.arcTempColor.style.strokeDashoffset = String(350 - tempNorm * 350);
+
         el.valMinTemp.textContent = `${telemetry.minTemp.toFixed(1)}°C`;
         el.valMaxTemp.textContent = `${telemetry.maxTemp.toFixed(1)}°C`;
         el.lblThresholdTemp.textContent = `${control.thresholds.tempLow}° - ${control.thresholds.tempHigh}°C`;
@@ -1819,55 +2028,58 @@
         const anyHeater = control.relays.heater1 || control.relays.heater2;
         if (telemetry.temperature >= control.thresholds.tempHigh) {
           el.tempStatusBadge.textContent = 'Cut-Off Tercapai';
-          el.tempStatusBadge.className = 'pill-status alert';
+          el.tempStatusBadge.className = 'tag-pill alert';
         } else if (anyHeater) {
           el.tempStatusBadge.textContent = 'Memanaskan';
-          el.tempStatusBadge.className = 'pill-status hot';
+          el.tempStatusBadge.className = 'tag-pill hot';
         } else {
           el.tempStatusBadge.textContent = 'Stabil';
-          el.tempStatusBadge.className = 'pill-status ok';
+          el.tempStatusBadge.className = 'tag-pill ok';
         }
 
-        // Radial Gauge Kelembaban
+        // 2. Dial Analog Kelembaban (0% -> -130 deg, 100% -> +130 deg)
         el.valHum.textContent = telemetry.humidity.toFixed(1);
-        const humRatio = Math.max(0, Math.min(1, telemetry.humidity / 100));
-        el.arcHum.style.strokeDashoffset = String(330 - humRatio * 330);
+        const humNorm = Math.max(0, Math.min(1, telemetry.humidity / 100));
+        const humAngle = -130 + humNorm * 260;
+        el.needleHum.setAttribute('transform', `rotate(${humAngle.toFixed(1)})`);
+        el.arcHumColor.style.strokeDashoffset = String(350 - humNorm * 350);
+
         el.valMinHum.textContent = `${telemetry.minHum.toFixed(1)}%`;
         el.valMaxHum.textContent = `${telemetry.maxHum.toFixed(1)}%`;
         el.valHeatIndex.textContent = `${telemetry.heatIndex.toFixed(1)}°C`;
 
-        // Chamber Visualizer
-        el.chamberStage.classList.toggle('cooling', !anyHeater);
+        // 3. Jendela Observasi Ruang Pemanas
+        el.chamberStage.classList.toggle('standby', !anyHeater);
         el.visualFanWheel.classList.toggle('spinning', control.relays.fan);
-        el.visualFanText.textContent = control.relays.fan ? 'MENYALA (Sirkulasi Aktif)' : 'MATI (Standby)';
-        el.visualFanText.style.color = control.relays.fan ? 'var(--neon-cyan)' : 'var(--text-dim)';
+        el.visualFanText.textContent = control.relays.fan ? 'Berputar Aktif • GPIO 14' : 'Berhenti (Standby) • GPIO 14';
+        el.visualFanText.style.color = control.relays.fan ? 'var(--brass)' : 'var(--text-muted)';
 
-        el.visualHeater1.classList.toggle('glowing', control.relays.heater1);
-        el.visualH1Text.textContent = control.relays.heater1 ? 'ON • Memanaskan' : 'OFF • Standby';
-        el.visualHeater2.classList.toggle('glowing', control.relays.heater2);
-        el.visualH2Text.textContent = control.relays.heater2 ? 'ON • Memanaskan' : 'OFF • Standby';
+        el.visualHeater1.classList.toggle('active', control.relays.heater1);
+        el.visualH1Text.textContent = control.relays.heater1 ? 'ON • Memanaskan' : 'OFF • Siaga';
+        el.visualHeater2.classList.toggle('active', control.relays.heater2);
+        el.visualH2Text.textContent = control.relays.heater2 ? 'ON • Memanaskan' : 'OFF • Siaga';
 
         el.chamberStatusBanner.innerHTML = anyHeater
-          ? `🔥 Pemanas Aktif • Suhu Ruang <strong>${telemetry.temperature.toFixed(1)}°C</strong> (Cut-Off: ${control.thresholds.tempHigh}°C)`
-          : `❄️ Heater Cut-Off / Standby • Suhu Ruang <strong>${telemetry.temperature.toFixed(1)}°C</strong>`;
+          ? `Pemanas Bekerja • Suhu <strong>${telemetry.temperature.toFixed(1)}°C</strong> (Cut-Off ${control.thresholds.tempHigh}°C)`
+          : ` Termostat Siaga • Suhu <strong>${telemetry.temperature.toFixed(1)}°C</strong>`;
 
         const activeCnt = Object.values(control.relays).filter(Boolean).length;
         el.valActiveRelays.textContent = `${activeCnt} / 3 Aktif`;
-        el.valModeSummary.textContent = control.mode.toUpperCase();
+        el.valModeSummary.textContent = `MODE ${control.mode.toUpperCase()}`;
         el.valDataSource.textContent = telemetry.source;
+        el.valDewPoint.textContent = `${telemetry.dewPoint.toFixed(1)}°C`;
         el.valLastUpdate.textContent = formatTime(telemetry.updatedAt);
 
-        // Mode & Relay Switches
+        // 4. Switchboard
         el.btnModeAuto.classList.toggle('active', control.mode === 'auto');
         el.btnModeManual.classList.toggle('active', control.mode === 'manual');
-        el.modeBanner.classList.toggle('manual-mode', control.mode === 'manual');
         el.modeBannerText.innerHTML = control.mode === 'auto'
-          ? '⚡ <strong>Mode AUTO Aktif:</strong> Heater 1, Heater 2, dan Kipas diatur otomatis oleh sensor.'
-          : '🖐️ <strong>Mode MANUAL Aktif:</strong> Klik kartu atau saklar di bawah untuk kontrol jarak jauh.';
+          ? '<strong>Mode Otomatis (AUTO):</strong> Heater I, Heater II, dan Kipas bekerja mengikuti ambang termostat.'
+          : '<strong>Mode Manual:</strong> Seluruh saklar di bawah dikendalikan langsung oleh pengguna.';
 
-        syncActuatorCard(control.relays.heater1, el.cardRelayHeater1, el.stateTextHeater1, el.toggleHeater1);
-        syncActuatorCard(control.relays.heater2, el.cardRelayHeater2, el.stateTextHeater2, el.toggleHeater2);
-        syncActuatorCard(control.relays.fan, el.cardRelayFan, el.stateTextFan, el.toggleFan);
+        syncSwitch(control.relays.heater1, el.cardRelayHeater1, el.stateTextHeater1, el.toggleHeater1);
+        syncSwitch(control.relays.heater2, el.cardRelayHeater2, el.stateTextHeater2, el.toggleHeater2);
+        syncSwitch(control.relays.fan, el.cardRelayFan, el.stateTextFan, el.toggleFan);
 
         el.metaH1Low.textContent = control.thresholds.tempLow.toFixed(1);
         el.metaH1High.textContent = control.thresholds.tempHigh.toFixed(1);
@@ -1879,16 +2091,16 @@
         renderTable();
       }
 
-      function syncActuatorCard(isOn, card, pill, chk) {
+      function syncSwitch(isOn, card, stamp, chk) {
         chk.checked = isOn;
         card.classList.toggle('is-on', isOn);
-        pill.textContent = isOn ? 'ON' : 'OFF';
+        stamp.textContent = isOn ? 'ON' : 'OFF';
       }
 
       function renderLogs() {
         el.logList.innerHTML = appState.logs.slice(0, 20).map((l) => `
-          <div class="log-entry ${l.type}">
-            <span class="log-time">${formatTime(l.time)}</span>
+          <div class="journal-row ${l.type}">
+            <span class="journal-time">${formatTime(l.time)}</span>
             <span>${l.message}</span>
           </div>
         `).join('');
@@ -1900,17 +2112,20 @@
           return `
             <tr>
               <td style="font-family:'JetBrains Mono',monospace">${formatTime(r.time)}</td>
-              <td><strong style="color:#ff8c5a">${r.temperature.toFixed(1)}°C</strong></td>
-              <td><strong style="color:#00e5ff">${r.humidity.toFixed(1)}%</strong></td>
-              <td><span class="pill-status ${rel.heater1 ? 'hot' : ''}">${rel.heater1 ? 'ON' : 'OFF'}</span></td>
-              <td><span class="pill-status ${rel.heater2 ? 'hot' : ''}">${rel.heater2 ? 'ON' : 'OFF'}</span></td>
-              <td><span class="pill-status ${rel.fan ? 'ok' : ''}">${rel.fan ? 'ON' : 'OFF'}</span></td>
-              <td><span class="pill-status">${r.source || 'MQTT'}</span></td>
+              <td><strong style="color:var(--copper)">${r.temperature.toFixed(1)}°C</strong></td>
+              <td><strong style="color:var(--teal)">${r.humidity.toFixed(1)}%</strong></td>
+              <td><span class="tag-pill ${rel.heater1 ? 'hot' : ''}">${rel.heater1 ? 'ON' : 'OFF'}</span></td>
+              <td><span class="tag-pill ${rel.heater2 ? 'hot' : ''}">${rel.heater2 ? 'ON' : 'OFF'}</span></td>
+              <td><span class="tag-pill ${rel.fan ? 'ok' : ''}">${rel.fan ? 'ON' : 'OFF'}</span></td>
+              <td><span class="tag-pill">${r.source || 'MQTT'}</span></td>
             </tr>
           `;
         }).join('');
       }
 
+      // =====================================================================
+      // CLASSIC-MODERN TELEMETRY CHART
+      // =====================================================================
       function drawChart(hoverIdx = -1) {
         const canvas = el.canvas;
         const ctx = canvas.getContext('2d');
@@ -1930,6 +2145,11 @@
         const data = appState.history;
         if (!data.length) { ctx.restore(); return; }
 
+        const isIvory = document.documentElement.getAttribute('data-theme') === 'ivory-classic';
+        const tempStroke = isIvory ? '#c85a23' : '#d97236';
+        const humStroke = isIvory ? '#2c7a8b' : '#4a9ead';
+        const gridStroke = isIvory ? 'rgba(31, 27, 22, 0.08)' : 'rgba(245, 240, 230, 0.08)';
+
         const padL = 42, padR = 42, padT = 18, padB = 28;
         const pw = w - padL - padR;
         const ph = h - padT - padB;
@@ -1941,14 +2161,14 @@
         const yH = (v) => padT + ph - ((v - minH) / (maxH - minH)) * ph;
         const xP = (i) => data.length === 1 ? padL + pw / 2 : padL + (i / (data.length - 1)) * pw;
 
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.1)';
-        ctx.font = '600 11px "JetBrains Mono", monospace';
+        ctx.strokeStyle = gridStroke;
+        ctx.font = '600 10.5px "JetBrains Mono", monospace';
         for (let s = 0; s <= 4; s++) {
           const y = padT + (s / 4) * ph;
           ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
-          ctx.fillStyle = '#ff8c5a'; ctx.textAlign = 'right';
+          ctx.fillStyle = tempStroke; ctx.textAlign = 'right';
           ctx.fillText(`${(maxT - (s / 4) * (maxT - minT)).toFixed(0)}°`, padL - 6, y + 4);
-          ctx.fillStyle = '#00e5ff'; ctx.textAlign = 'left';
+          ctx.fillStyle = humStroke; ctx.textAlign = 'left';
           ctx.fillText(`${(maxH - (s / 4) * (maxH - minH)).toFixed(0)}%`, w - padR + 6, y + 4);
         }
 
@@ -1956,15 +2176,15 @@
         if (cutY >= padT && cutY <= padT + ph) {
           ctx.save();
           ctx.setLineDash([6, 4]);
-          ctx.strokeStyle = 'rgba(244, 63, 94, 0.75)';
+          ctx.strokeStyle = 'rgba(201, 74, 74, 0.72)';
           ctx.beginPath(); ctx.moveTo(padL, cutY); ctx.lineTo(w - padR, cutY); ctx.stroke();
           ctx.restore();
         }
 
-        function renderCurve(getter, yFn, color, fillTop) {
+        function drawCurve(getter, yFn, color, alphaTop) {
           const grad = ctx.createLinearGradient(0, padT, 0, padT + ph);
-          grad.addColorStop(0, fillTop);
-          grad.addColorStop(1, 'rgba(6, 9, 19, 0)');
+          grad.addColorStop(0, alphaTop);
+          grad.addColorStop(1, 'rgba(0,0,0,0)');
 
           ctx.beginPath();
           data.forEach((d, i) => {
@@ -1983,23 +2203,23 @@
             if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
           });
           ctx.strokeStyle = color;
-          ctx.lineWidth = 2.6;
+          ctx.lineWidth = 2.4;
           ctx.stroke();
 
           data.forEach((d, i) => {
             const x = xP(i), y = yFn(getter(d));
             ctx.beginPath();
-            ctx.arc(x, y, i === hoverIdx ? 5.5 : 2.8, 0, Math.PI * 2);
+            ctx.arc(x, y, i === hoverIdx ? 5 : 2.6, 0, Math.PI * 2);
             ctx.fillStyle = color;
             ctx.fill();
           });
         }
 
         if (appState.chartSeries === 'both' || appState.chartSeries === 'hum') {
-          renderCurve((d) => d.humidity, yH, '#00e5ff', 'rgba(0, 229, 255, 0.22)');
+          drawCurve((d) => d.humidity, yH, humStroke, 'rgba(74, 158, 173, 0.2)');
         }
         if (appState.chartSeries === 'both' || appState.chartSeries === 'temp') {
-          renderCurve((d) => d.temperature, yT, '#ff6b2b', 'rgba(255, 107, 43, 0.25)');
+          drawCurve((d) => d.temperature, yT, tempStroke, 'rgba(217, 114, 54, 0.22)');
         }
         ctx.restore();
       }
@@ -2016,11 +2236,11 @@
           el.tooltip.classList.remove('hidden');
           el.tooltip.innerHTML = `
             <div><strong>${formatTime(pt.time)}</strong></div>
-            <div style="color:#ff8c5a">Suhu: <strong>${pt.temperature.toFixed(1)} °C</strong></div>
-            <div style="color:#00e5ff">Lembab: <strong>${pt.humidity.toFixed(1)} %RH</strong></div>
+            <div style="color:var(--copper)">Suhu: <strong>${pt.temperature.toFixed(1)} °C</strong></div>
+            <div style="color:var(--teal)">Lembab: <strong>${pt.humidity.toFixed(1)} %RH</strong></div>
           `;
           el.tooltip.style.left = `${Math.min(rect.width - 150, Math.max(10, mx + 12))}px`;
-          el.tooltip.style.top = '18px';
+          el.tooltip.style.top = '16px';
         }
       });
 
@@ -2031,27 +2251,27 @@
       window.addEventListener('resize', () => drawChart());
 
       // =====================================================================
-      // AKSI KONTROL (SINKRON KE MQTT CLOUD + LOKAL)
+      // INTERAKSI KONTROL & EVENT LISTENERS
       // =====================================================================
       async function updateControl(payload) {
         if (payload.mode) {
           appState.control.mode = payload.mode;
-          addLog('control', `Mode diubah ke ${payload.mode.toUpperCase()} & dikirim ke MQTT.`);
+          addLog('control', `Mode diubah ke ${payload.mode.toUpperCase()}.`);
         }
         if (payload.relays) {
-          const names = { heater1: 'Heater 1', heater2: 'Heater 2', fan: 'Kipas Sirkulasi' };
+          const names = { heater1: 'Heater I', heater2: 'Heater II', fan: 'Kipas Sirkulasi' };
           for (const k of Object.keys(payload.relays)) {
             const val = payload.relays[k];
             if (appState.control.mode === 'auto' && appState.control.relays[k] !== val) {
               appState.control.mode = 'manual';
             }
             appState.control.relays[k] = val;
-            addLog('control', `${names[k]} -> ${val ? 'ON' : 'OFF'} (Terkirim via MQTT).`);
+            addLog('control', `Saklar ${names[k]} -> ${val ? 'ON' : 'OFF'}.`);
           }
         }
         if (payload.thresholds) {
           Object.assign(appState.control.thresholds, payload.thresholds);
-          addLog('control', `Batas Termostat [${appState.control.thresholds.tempLow}°C - ${appState.control.thresholds.tempHigh}°C] dikirim ke MQTT.`);
+          addLog('control', `Kalibrasi Termostat disimpan: [${appState.control.thresholds.tempLow}°C - ${appState.control.thresholds.tempHigh}°C].`);
         }
 
         evaluateAuto();
@@ -2090,13 +2310,12 @@
         const humHigh = parseFloat(el.inputHumHigh.value);
         const fanRule = el.selectFanRule.value;
         if (tempLow >= tempHigh) {
-          alert('Suhu Nyala harus lebih kecil dari Suhu Cut-Off.');
+          alert('Batas Bawah harus lebih kecil daripada Batas Cut-Off.');
           return;
         }
         updateControl({ thresholds: { tempLow, tempHigh, humHigh, fanRule } });
       });
 
-      // Tab Mode Sumber
       function setTabMode(m) {
         appState.sourceMode = m;
         [el.modeBtnMqtt, el.modeBtnSim, el.modeBtnDirect].forEach((b) => b.classList.remove('active'));
@@ -2173,10 +2392,10 @@
           r.source,
         ]);
         const csv = 'data:text/csv;charset=utf-8,' +
-          ['Waktu,Suhu_C,Kelembaban_RH,Heater_1,Heater_2,Kipas,Sumber', ...rows.map((e) => e.join(','))].join('\n');
+          ['Waktu,Suhu_C,Kelembaban_RH,Heater_I,Heater_II,Kipas,Sumber', ...rows.map((e) => e.join(','))].join('\n');
         const a = document.createElement('a');
         a.href = encodeURI(csv);
-        a.download = `esp32_mqtt_log_${Date.now()}.csv`;
+        a.download = `esp32_telemetry_${Date.now()}.csv`;
         a.click();
       });
 
@@ -2184,7 +2403,6 @@
       el.btnOpenGuide.addEventListener('click', () => el.guideModal.classList.remove('hidden'));
       el.btnCloseGuide.addEventListener('click', () => el.guideModal.classList.add('hidden'));
 
-      // Inisialisasi Awal
       el.selectBroker.value = appState.brokerUrl;
       el.inputTopicId.value = appState.topicId;
 
@@ -2205,40 +2423,31 @@
             source: 'SIM',
           });
         }
+        addLog('info', 'Studio Monitoring Klasik-Modern aktif. Jarum instrumen & MQTT siap.');
         renderAll();
         connectMqttBroker();
       })();
 
-      // Loop 3 Detik (Jika belum ada ESP32 fisik yang mengirim MQTT, jalankan simulasi halus)
       setInterval(async () => {
         const espHardwareActive = Date.now() - lastHardwareMsgAt < 10000;
-
         if (!espHardwareActive && (appState.sourceMode === 'sim' || appState.sourceMode === 'mqtt') && appState.autoWave) {
           const { heater1, heater2, fan } = appState.control.relays;
           const heatersCount = (heater1 ? 1 : 0) + (heater2 ? 1 : 0);
           let dT = (Math.random() - 0.5) * 0.15;
-          let dH = (Math.random() - 0.5) * 0.3;
+          let dTBase = heatersCount > 0 ? heatersCount * 0.3 : -0.32;
+          let dH = heatersCount > 0 ? -heatersCount * 0.2 : 0.18;
+          if (fan && heatersCount === 0) dTBase -= 0.15;
 
-          if (heatersCount > 0) {
-            dT += heatersCount * 0.3;
-            dH -= heatersCount * 0.2;
-          } else {
-            dT -= 0.32;
-            dH += 0.18;
-          }
-          if (fan && heatersCount === 0) dT -= 0.15;
+          const nextT = Math.max(22, Math.min(55, appState.telemetry.temperature + dTBase + dT));
+          const nextH = Math.max(20, Math.min(90, appState.telemetry.humidity + dH + (Math.random() - 0.5) * 0.3));
 
-          const nextT = Math.max(22, Math.min(55, appState.telemetry.temperature + dT));
-          const nextH = Math.max(20, Math.min(90, appState.telemetry.humidity + dH));
           el.simTempSlider.value = nextT.toFixed(1);
           el.simHumSlider.value = nextH.toFixed(1);
           el.simTempLabel.textContent = `${nextT.toFixed(1)}°C`;
           el.simHumLabel.textContent = `${nextH.toFixed(1)}%`;
 
           pushTelemetry(nextT, nextH, appState.mqttConnected ? 'SIM+MQTT' : 'SIM');
-          if (appState.sourceMode === 'sim') {
-            publishMqttSimTelemetry();
-          }
+          if (appState.sourceMode === 'sim') publishMqttSimTelemetry();
         } else if (appState.sourceMode === 'direct') {
           try {
             const res = await fetch(`http://${appState.espIp}/api/status`);
